@@ -30,17 +30,29 @@ _CAMBRIDGE_TERMS_2025_26 = [
     (date(2026, 6, 1), date(2026, 7, 20)),      # Summer 2
 ]
 
-BUILTIN_PRESETS: dict[str, list[dict]] = {
-    "Cambridge: Term vs Holidays 2025-26": [
-        {"name": "Term time", "ranges": _CAMBRIDGE_TERMS_2025_26},
-        {"name": "School holidays", "ranges": _CAMBRIDGE_HOLIDAYS_2025_26},
-    ],
-    "Cambridge: Term time 2025-26": [
-        {"name": "Term time", "ranges": _CAMBRIDGE_TERMS_2025_26},
-    ],
-    "Cambridge: School holidays 2025-26": [
-        {"name": "School holidays", "ranges": _CAMBRIDGE_HOLIDAYS_2025_26},
-    ],
+WEEKDAYS = [0, 1, 2, 3, 4]  # Mon-Fri
+
+# Each preset is a dict with "groups" and optional "days" (day-of-week filter)
+BUILTIN_PRESETS: dict[str, dict] = {
+    "Cambridge: Term vs Holidays 2025-26": {
+        "groups": [
+            {"name": "Term time", "ranges": _CAMBRIDGE_TERMS_2025_26},
+            {"name": "School holidays", "ranges": _CAMBRIDGE_HOLIDAYS_2025_26},
+        ],
+        "days": WEEKDAYS,
+    },
+    "Cambridge: Term time 2025-26": {
+        "groups": [
+            {"name": "Term time", "ranges": _CAMBRIDGE_TERMS_2025_26},
+        ],
+        "days": WEEKDAYS,
+    },
+    "Cambridge: School holidays 2025-26": {
+        "groups": [
+            {"name": "School holidays", "ranges": _CAMBRIDGE_HOLIDAYS_2025_26},
+        ],
+        "days": WEEKDAYS,
+    },
 }
 
 

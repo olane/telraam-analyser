@@ -88,18 +88,23 @@ def _find_gaps(
     end: date,
 ) -> list[tuple[date, date]]:
     """Determine which date ranges are missing from the cache."""
+    from datetime import date as date_type
+
     if cached is None or cached.empty:
         return [(start, end)]
 
     cached_start = cached.index.min().date()
     cached_end = cached.index.max().date()
+    today = date_type.today()
 
     gaps: list[tuple[date, date]] = []
 
     if start < cached_start:
         gaps.append((start, min(cached_start, end)))
 
-    if end > cached_end:
-        gaps.append((max(cached_end, start), end))
+    # Only fetch beyond cached_end if there's actually new data to get
+    # (i.e. cached_end is before today and requested end is after cached_end)
+    if end > cached_end and cached_end < today:
+        gaps.append((max(cached_end, start), min(end, today + timedelta(days=1))))
 
     return gaps

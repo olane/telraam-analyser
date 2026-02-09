@@ -57,10 +57,13 @@ if preset_options:
         if chosen_preset.startswith("Saved: "):
             loaded = load_period_groups(chosen_preset.removeprefix("Saved: "))
         else:
+            preset = BUILTIN_PRESETS[chosen_preset]
             loaded = [
                 {"name": g["name"], "ranges": list(g["ranges"])}
-                for g in BUILTIN_PRESETS[chosen_preset]
+                for g in preset["groups"]
             ]
+            if "days" in preset:
+                st.session_state.preset_days = preset["days"]
         st.session_state.period_groups = loaded
         # Bump version to generate fresh widget keys
         st.session_state.pg_version = st.session_state.get("pg_version", 0) + 1
@@ -136,8 +139,16 @@ hour_range = st.sidebar.slider(
 )
 
 DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+# If a preset set specific days, use those as the default
+if "preset_days" in st.session_state:
+    default_day_labels = [DAY_LABELS[i] for i in st.session_state.pop("preset_days")]
+    # Bump key so the widget picks up the new default
+    st.session_state.days_version = st.session_state.get("days_version", 0) + 1
+else:
+    default_day_labels = DAY_LABELS
+_dv = st.session_state.get("days_version", 0)
 selected_day_labels = st.sidebar.multiselect(
-    "Days of week", DAY_LABELS, default=DAY_LABELS
+    "Days of week", DAY_LABELS, default=default_day_labels, key=f"days_{_dv}"
 )
 selected_days = [DAY_LABELS.index(d) for d in selected_day_labels]
 
