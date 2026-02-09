@@ -148,10 +148,9 @@ def compute_speed_distribution(
     if valid.empty:
         return None
 
-    # Expand lists into columns
-    # 0to70plus uses 5 km/h bins; 0to120plus uses 10 km/h bins
+    # Expand lists into columns — both histograms use 5 km/h bins
     max_bins = max(len(v) for v in valid)
-    step_kmh = 5 if "0to70plus" in hist_col else 10
+    step_kmh = 5
     if unit == "mph":
         factor = 0.621371
     else:
@@ -211,7 +210,7 @@ def compute_speed_summary(
 
             parsed = gdf[hist_col].apply(_parse).dropna()
             if not parsed.empty:
-                step_kmh = 5 if "0to70plus" in hist_col else 10
+                step_kmh = 5
                 # Estimate mean from bin midpoints
                 avg_hist = pd.DataFrame(parsed.tolist()).mean()
                 n_bins = len(avg_hist)
