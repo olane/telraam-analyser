@@ -171,22 +171,25 @@ def plot_daily_volume_grouped(
 def plot_modal_split(
     split_df: pd.DataFrame, modalities: list[str]
 ) -> go.Figure:
-    """Grouped bar chart of modal split percentages per period group."""
+    """Grouped bar chart: one bucket per modality, one bar per period group."""
     fig = go.Figure()
+    groups = split_df["period_group"].unique().tolist()
+    period_colours = _period_colour(groups)
 
-    for modality in modalities:
+    for group in groups:
+        row = split_df[split_df["period_group"] == group].iloc[0]
         fig.add_trace(
             go.Bar(
-                x=split_df["period_group"],
-                y=split_df[modality],
-                name=modality,
-                marker_color=MODALITY_COLOURS.get(modality),
+                x=modalities,
+                y=[row[m] for m in modalities],
+                name=group,
+                marker_color=period_colours[group],
             )
         )
 
     fig.update_layout(
         title="Modal Split (%)",
-        xaxis_title="Period Group",
+        xaxis_title="Modality",
         yaxis_title="Share (%)",
         barmode="group",
     )
