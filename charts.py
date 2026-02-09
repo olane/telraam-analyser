@@ -35,28 +35,44 @@ def _period_colour(period_names: list[str]) -> dict[str, str]:
 # Hourly profile
 # ---------------------------------------------------------------------------
 
+_DASH_STYLES = ["solid", "dash", "dot", "dashdot", "longdash", "longdashdot"]
+_MARKER_SYMBOLS = ["circle", "square", "diamond", "cross", "x", "triangle-up"]
+
+
 def plot_hourly_profile(
     profile_df: pd.DataFrame, modalities: list[str]
 ) -> go.Figure:
-    """Line chart: hour on x-axis, one trace per (period_group, modality)."""
+    """Line chart: hour on x-axis, one trace per (period_group, modality).
+
+    Period groups are distinguished by colour; modalities are distinguished
+    by line dash style, marker symbol, and their own fixed colour when there
+    is only one period group.
+    """
     fig = go.Figure()
     groups = profile_df["period_group"].unique().tolist()
     period_colours = _period_colour(groups)
+    single_group = len(groups) == 1
 
-    for modality in modalities:
+    for mi, modality in enumerate(modalities):
+        dash = _DASH_STYLES[mi % len(_DASH_STYLES)]
+        marker = _MARKER_SYMBOLS[mi % len(_MARKER_SYMBOLS)]
         for group in groups:
             subset = profile_df[profile_df["period_group"] == group]
+            # With one group, colour by modality; with multiple, colour by group
+            colour = (
+                MODALITY_COLOURS.get(modality, period_colours[group])
+                if single_group
+                else period_colours[group]
+            )
             fig.add_trace(
                 go.Scatter(
                     x=subset["hour"],
                     y=subset[modality],
                     mode="lines+markers",
                     name=f"{group} — {modality}",
-                    line=dict(
-                        color=period_colours[group],
-                        dash="solid" if modality == modalities[0] else "dot",
-                    ),
-                    legendgroup=group,
+                    line=dict(color=colour, dash=dash, width=2),
+                    marker=dict(symbol=marker, size=7),
+                    legendgroup=f"{group} — {modality}",
                 )
             )
 
@@ -77,14 +93,56 @@ def plot_hourly_profile(
 def plot_daily_volume(
     daily_df: pd.DataFrame, modalities: list[str]
 ) -> go.Figure:
-    """Time series bar chart of daily totals, coloured by period group."""
-    fig = go.Figure()
+    """Stacked bar chart of daily totals, one subplot row per period group."""
+    from plotly.subplots import make_subplots
+
+    groups = daily_df["period_group"].unique().tolist()
+    fig = make_subplots(
+        rows=len(groups),
+        cols=1,
+        shared_xaxes=True,
+        shared_yaxes=True,
+        subplot_titles=groups,
+        vertical_spacing=0.08,
+    )
+
+    for gi, group in enumerate(groups, 1):
+        subset = daily_df[daily_df["period_group"] == group].sort_values("day")
+        for modality in modalities:
+            fig.add_trace(
+                go.Bar(
+                    x=subset["day"],
+                    y=subset[modality],
+                    name=modality,
+                    marker_color=MODALITY_COLOURS.get(modality),
+                    legendgroup=modality,
+                    showlegend=(gi == 1),  # only show legend once per modality
+                ),
+                row=gi,
+                col=1,
+            )
+
+    fig.update_layout(
+        title="Daily Traffic Volume",
+        barmode="stack",
+        hovermode="x unified",
+        height=350 * len(groups),
+    )
+    fig.update_yaxes(title_text="Count", row=1, col=1)
+    return fig
+
+
+def plot_daily_volume_grouped(
+    daily_df: pd.DataFrame, modalities: list[str]
+) -> go.Figure:
+    """Grouped bar chart of daily totals, one bar per period group."""
     groups = daily_df["period_group"].unique().tolist()
     period_colours = _period_colour(groups)
 
     daily_df = daily_df.copy()
     daily_df["total"] = daily_df[modalities].sum(axis=1)
 
+    fig = go.Figure()
     for group in groups:
         subset = daily_df[daily_df["period_group"] == group].sort_values("day")
         fig.add_trace(
@@ -139,8 +197,8 @@ def plot_modal_split(
 # Speed distribution
 # ---------------------------------------------------------------------------
 
-def plot_speed_distribution(speed_df: pd.DataFrame) -> go.Figure:
-    """Overlaid bar chart of speed bin percentages per period group."""
+def plot_speed_distribution(speed_df: pd.DataFrame, unit: str = "mph") -> go.Figure:
+    """Grouped bar chart of speed bin percentages per period group."""
     groups = speed_df["period_group"].unique().tolist()
     period_colours = _period_colour(groups)
     bin_cols = [c for c in speed_df.columns if c != "period_group"]
@@ -154,14 +212,13 @@ def plot_speed_distribution(speed_df: pd.DataFrame) -> go.Figure:
                 y=[row[c] for c in bin_cols],
                 name=group,
                 marker_color=period_colours[group],
-                opacity=0.7,
             )
         )
 
     fig.update_layout(
         title="Car Speed Distribution",
-        xaxis_title="Speed Bin (km/h)",
+        xaxis_title=f"Speed Bin ({unit})",
         yaxis_title="Share (%)",
-        barmode="overlay",
+        barmode="group",
     )
     return fig

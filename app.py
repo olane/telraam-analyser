@@ -62,6 +62,8 @@ if preset_options:
                 for g in BUILTIN_PRESETS[chosen_preset]
             ]
         st.session_state.period_groups = loaded
+        # Bump version to generate fresh widget keys
+        st.session_state.pg_version = st.session_state.get("pg_version", 0) + 1
         st.rerun()
 
 if "period_groups" not in st.session_state:
@@ -71,6 +73,7 @@ if "period_groups" not in st.session_state:
     ]
 
 groups_state = st.session_state.period_groups
+_v = st.session_state.get("pg_version", 0)
 
 # Save current groups
 with st.sidebar.expander("Save current periods"):
@@ -97,24 +100,24 @@ def _remove_group(idx: int):
 
 for gi, g in enumerate(groups_state):
     with st.sidebar.expander(g["name"], expanded=True):
-        g["name"] = st.text_input("Name", value=g["name"], key=f"gname_{gi}")
+        g["name"] = st.text_input("Name", value=g["name"], key=f"gname_{_v}_{gi}")
 
         for ri, (rs, re) in enumerate(g["ranges"]):
             cols = st.columns([4, 4, 1])
-            new_start = cols[0].date_input("Start", value=rs, key=f"gs_{gi}_{ri}")
-            new_end = cols[1].date_input("End", value=re, key=f"ge_{gi}_{ri}")
-            if cols[2].button(":x:", key=f"gx_{gi}_{ri}"):
+            new_start = cols[0].date_input("Start", value=rs, key=f"gs_{_v}_{gi}_{ri}")
+            new_end = cols[1].date_input("End", value=re, key=f"ge_{_v}_{gi}_{ri}")
+            if cols[2].button(":x:", key=f"gx_{_v}_{gi}_{ri}"):
                 g["ranges"].pop(ri)
                 st.rerun()
             g["ranges"][ri] = (new_start, new_end)
 
-        if st.button("+ Add date range", key=f"gadd_{gi}"):
+        if st.button("+ Add date range", key=f"gadd_{_v}_{gi}"):
             today = date.today()
             g["ranges"].append((today - timedelta(days=30), today))
             st.rerun()
 
         if len(groups_state) > 1:
-            if st.button("Remove group", key=f"grem_{gi}"):
+            if st.button("Remove group", key=f"grem_{_v}_{gi}"):
                 _remove_group(gi)
                 st.rerun()
 

@@ -113,12 +113,16 @@ def compute_modal_split(
     return percentages.reset_index()
 
 
-def compute_speed_distribution(df: pd.DataFrame) -> pd.DataFrame | None:
+def compute_speed_distribution(
+    df: pd.DataFrame, unit: str = "mph"
+) -> pd.DataFrame | None:
     """Parse speed histogram JSON strings and average per period group.
 
     Speed histogram columns contain JSON-like lists of percentages for
     each speed bin. Returns a DataFrame with columns for each bin, or
     None if no speed data is available.
+
+    *unit*: ``"mph"`` or ``"km/h"``
     """
     hist_col = get_speed_hist_columns(df)
     if hist_col is None:
@@ -129,6 +133,8 @@ def compute_speed_distribution(df: pd.DataFrame) -> pd.DataFrame | None:
     def parse_hist(val):
         if isinstance(val, list):
             return val
+        if hasattr(val, "tolist"):  # numpy array
+            return val.tolist()
         if isinstance(val, str):
             try:
                 return json.loads(val)
@@ -143,19 +149,80 @@ def compute_speed_distribution(df: pd.DataFrame) -> pd.DataFrame | None:
         return None
 
     # Expand lists into columns
+    # 0to70plus uses 5 km/h bins; 0to120plus uses 10 km/h bins
     max_bins = max(len(v) for v in valid)
-    if "0to120plus" in hist_col:
-        step = 10
-        labels = [f"{i*step}-{(i+1)*step}" for i in range(max_bins - 1)] + [
-            f"{(max_bins-1)*step}+"
-        ]
+    step_kmh = 5 if "0to70plus" in hist_col else 10
+    if unit == "mph":
+        factor = 0.621371
     else:
-        step = 10
-        labels = [f"{i*step}-{(i+1)*step}" for i in range(max_bins - 1)] + [
-            f"{(max_bins-1)*step}+"
-        ]
+        factor = 1.0
+    labels = []
+    for i in range(max_bins - 1):
+        lo = round(i * step_kmh * factor)
+        hi = round((i + 1) * step_kmh * factor)
+        labels.append(f"{lo}-{hi}")
+    labels.append(f"{round((max_bins - 1) * step_kmh * factor)}+")
 
     expanded = pd.DataFrame(valid.tolist(), index=valid.index, columns=labels)
     expanded["period_group"] = df.loc[expanded.index, "period_group"]
 
     return expanded.groupby("period_group")[labels].mean().reset_index()
+
+
+def compute_speed_summary(
+    df: pd.DataFrame, unit: str = "mph"
+) -> pd.DataFrame | None:
+    """Compute V85 and estimated mean speed per period group.
+
+    Uses the ``v85`` column if available, and estimates mean speed from
+    the speed histogram bins.
+    """
+    KMH_TO_MPH = 0.621371
+    factor = KMH_TO_MPH if unit == "mph" else 1.0
+
+    hist_col = get_speed_hist_columns(df)
+    has_v85 = "v85" in df.columns
+    if not has_v85 and hist_col is None:
+        return None
+
+    rows = []
+    for group_name, gdf in df.groupby("period_group"):
+        row: dict = {"period_group": group_name}
+
+        if has_v85:
+            v85_vals = pd.to_numeric(gdf["v85"], errors="coerce").dropna()
+            if not v85_vals.empty:
+                row[f"V85 ({unit})"] = round(v85_vals.mean() * factor, 1)
+
+        if hist_col is not None:
+            import json
+
+            def _parse(val):
+                if isinstance(val, list):
+                    return val
+                if hasattr(val, "tolist"):  # numpy array
+                    return val.tolist()
+                if isinstance(val, str):
+                    try:
+                        return json.loads(val)
+                    except (json.JSONDecodeError, TypeError):
+                        return None
+                return None
+
+            parsed = gdf[hist_col].apply(_parse).dropna()
+            if not parsed.empty:
+                step_kmh = 5 if "0to70plus" in hist_col else 10
+                # Estimate mean from bin midpoints
+                avg_hist = pd.DataFrame(parsed.tolist()).mean()
+                n_bins = len(avg_hist)
+                midpoints = [
+                    (i + 0.5) * step_kmh for i in range(n_bins - 1)
+                ] + [(n_bins - 1) * step_kmh]  # last bin: use lower bound
+                mean_kmh = sum(m * p / 100 for m, p in zip(midpoints, avg_hist))
+                row[f"Est. mean ({unit})"] = round(mean_kmh * factor, 1)
+
+        rows.append(row)
+
+    if not rows:
+        return None
+    return pd.DataFrame(rows)

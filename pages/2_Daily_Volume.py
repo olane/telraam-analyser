@@ -7,7 +7,7 @@ from analysis import (
     filter_days_of_week,
     filter_time_of_day,
 )
-from charts import plot_daily_volume
+from charts import plot_daily_volume, plot_daily_volume_grouped
 
 st.header("Daily Traffic Volume")
 
@@ -32,7 +32,18 @@ if df.empty:
     st.stop()
 
 daily = compute_daily_totals(df, fs.selected_modalities)
-fig = plot_daily_volume(daily, fs.selected_modalities)
+
+view = st.radio(
+    "View",
+    ["Modal breakdown", "Period comparison"],
+    horizontal=True,
+)
+
+if view == "Modal breakdown":
+    fig = plot_daily_volume(daily, fs.selected_modalities)
+else:
+    fig = plot_daily_volume_grouped(daily, fs.selected_modalities)
+
 st.plotly_chart(fig, use_container_width=True)
 
 with st.expander("Data table"):
