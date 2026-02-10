@@ -33,7 +33,7 @@ Telraam's built-in dashboard is great for day-to-day monitoring, but doesn't sup
    TELRAAM_SEGMENT_IDS=12345,67890
    ```
 
-   You need a [Telraam API subscription](https://telraam.net/api/data-subscription) and your segment ID(s).
+   You need a [Telraam API subscription](https://telraam.net/api/data-subscription) with advanced access and your segment ID(s).
 
 3. Run the app:
 
