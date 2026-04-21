@@ -44,6 +44,8 @@ S2_MODALITIES = [
     "car_rgt",
     "heavy_lft",
     "heavy_rgt",
+    "night_lft",
+    "night_rgt",
 ]
 
 # Speed histogram bucket columns (V85 distribution)

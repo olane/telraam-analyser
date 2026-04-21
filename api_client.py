@@ -76,6 +76,12 @@ class TelraamClient:
         if "date" in df.columns:
             df["date"] = pd.to_datetime(df["date"], utc=True)
             df = df.set_index("date").sort_index()
+
+        # Synthesize combined "night" column from _lft/_rgt (the API
+        # doesn't provide a pre-summed column like it does for other modes).
+        if "night_lft" in df.columns and "night_rgt" in df.columns and "night" not in df.columns:
+            df["night"] = df["night_lft"] + df["night_rgt"]
+
         return df
 
 

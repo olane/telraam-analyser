@@ -215,7 +215,7 @@ if st.sidebar.button("Load Data", type="primary"):
 if "available_modalities" in st.session_state:
     default_mods = [
         m for m in st.session_state.available_modalities
-        if m in ("pedestrian", "bike", "car", "heavy")
+        if m in ("pedestrian", "bike", "car", "heavy", "night")
     ]
     selected_modalities = st.sidebar.multiselect(
         "Modalities",

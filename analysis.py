@@ -19,11 +19,12 @@ from models import CLASSIC_MODALITIES, PeriodGroup
 def get_available_modalities(df: pd.DataFrame) -> list[str]:
     """Return modality columns present in *df*, preserving a sensible order."""
     ordered = [
-        "pedestrian", "bike", "car", "heavy",
+        "pedestrian", "bike", "car", "heavy", "night",
         "pedestrian_lft", "pedestrian_rgt",
         "bike_lft", "bike_rgt",
         "car_lft", "car_rgt",
         "heavy_lft", "heavy_rgt",
+        "night_lft", "night_rgt",
     ]
     return [m for m in ordered if m in df.columns]
 
