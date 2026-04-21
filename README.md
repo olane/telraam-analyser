@@ -18,12 +18,12 @@ Telraam's built-in dashboard is great for day-to-day monitoring, but doesn't sup
 
 ## Setup
 
-1. Clone the repo and create a virtual environment:
+1. Clone the repo, create a virtual environment, and install:
 
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
-   pip install streamlit pandas plotly requests pyarrow python-dotenv
+   pip install -e .
    ```
 
 2. Copy `.env.example` to `.env` and fill in your details:
