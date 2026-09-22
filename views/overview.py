@@ -8,6 +8,7 @@ import streamlit as st
 from analysis import (
     compute_daily_totals,
     compute_period_totals,
+    period_mean_daily,
 )
 from ui.components import kpi_row, period_summary
 from ui.state import get_controls, prepared_df
@@ -60,12 +61,11 @@ def render() -> None:
 
     # Compare mean daily counts, not raw totals: period lengths differ a lot
     # (a one-week half term vs a six-week term), so totals are misleading.
-    per_period_daily = pd.Series(dtype=float)
-    if not assigned.empty:
-        daily = compute_daily_totals(assigned, modalities)
-        if not daily.empty:
-            daily = daily.assign(total=daily[modalities].sum(axis=1))
-            per_period_daily = daily.groupby("period_label")["total"].mean()
+    per_period_daily = (
+        period_mean_daily(assigned, modalities)
+        if not assigned.empty
+        else pd.Series(dtype=float)
+    )
 
     items: list[dict] = [
         {"label": "Hourly rows", "value": f"{len(controls.df):,}"},

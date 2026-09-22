@@ -59,3 +59,14 @@ def _view_script() -> None:
 def test_views_render_without_exception():
     at = AppTest.from_function(_view_script, default_timeout=30).run()
     assert not at.exception
+
+
+def test_overview_renders_kpis():
+    at = AppTest.from_function(_view_script, default_timeout=30).run()
+    assert not at.exception
+    labels = {metric.label for metric in at.metric}
+    assert "Periods" in labels
+    assert "Mean daily count" in labels
+    assert len(at.metric) >= 4
+    # The period comparison KPI carries a percentage delta.
+    assert any(metric.delta for metric in at.metric)

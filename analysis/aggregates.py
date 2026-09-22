@@ -53,6 +53,22 @@ def compute_period_totals(
     return totals
 
 
+def period_mean_daily(
+    df: pd.DataFrame, modalities: list[str]
+) -> pd.Series:
+    """Mean daily count per period, indexed by period label.
+
+    Use this — not raw totals — to compare periods of different lengths
+    (a one-week half term vs a six-week term), otherwise shorter periods
+    always appear smaller.
+    """
+    daily = compute_daily_totals(df, modalities)
+    if daily.empty:
+        return pd.Series(dtype=float, name="mean_daily")
+    daily = daily.assign(total=daily[modalities].sum(axis=1))
+    return daily.groupby("period_label")["total"].mean().rename("mean_daily")
+
+
 # ---------------------------------------------------------------------------
 # Speed
 # ---------------------------------------------------------------------------

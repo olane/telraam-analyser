@@ -7,6 +7,7 @@ from analysis.aggregates import (
     compute_period_totals,
     compute_speed_distribution,
     compute_speed_summary,
+    period_mean_daily,
 )
 from analysis.align import (
     WEEKDAY_LABELS,
@@ -73,6 +74,7 @@ __all__ = [
     "keep_labels",
     "label_periods",
     "latest_year",
+    "period_mean_daily",
     "resolve",
     "rolling_mean",
     "weekday_adjusted_trend",

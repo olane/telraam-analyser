@@ -7,6 +7,7 @@ from analysis.aggregates import (
     compute_daily_totals,
     compute_modal_split,
     compute_period_totals,
+    period_mean_daily,
 )
 from analysis.filters import keep_assigned, label_periods
 from domain.models import PeriodInstance, PeriodKind
@@ -50,3 +51,20 @@ def test_period_totals_adds_total(make_df):
     row = totals.iloc[0]
     expected = sum(row[m] for m in MODALITIES)
     assert math.isclose(row["total"], expected)
+
+
+def test_period_mean_daily_ignores_period_length(make_df):
+    short = PeriodInstance(
+        "Short", PeriodKind.CUSTOM, ((date(2026, 2, 16), date(2026, 2, 20)),)
+    )
+    long = PeriodInstance(
+        "Long", PeriodKind.CUSTOM, ((date(2026, 3, 2), date(2026, 3, 27)),)
+    )
+    df = make_df("2026-02-16", "2026-03-27 23:00", base=10.0)
+    labelled = keep_assigned(label_periods(df, [short, long]))
+
+    means = period_mean_daily(labelled, MODALITIES)
+    assert math.isclose(means["Short"], means["Long"])
+
+    totals = compute_period_totals(labelled, MODALITIES).set_index("period_label")
+    assert totals.loc["Short", "total"] < totals.loc["Long", "total"]
