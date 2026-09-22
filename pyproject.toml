@@ -1,10 +1,10 @@
 [project]
 name = "telraam-viz"
-version = "0.1.0"
-description = "Compare Telraam traffic data across custom time periods"
+version = "0.2.0"
+description = "Explore and compare Telraam traffic data across calendar-aware periods"
 requires-python = ">=3.10"
 dependencies = [
-    "streamlit>=1.30",
+    "streamlit>=1.36",
     "pandas>=2.0",
     "plotly>=5.18",
     "requests>=2.31",
@@ -12,6 +12,21 @@ dependencies = [
     "python-dotenv>=1.0",
 ]
 
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
 [build-system]
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W", "UP"]
+ignore = ["E501"]

@@ -1,0 +1,81 @@
+"""Pure analysis layer: filtering, aggregation, alignment and comparisons."""
+
+from analysis.aggregates import (
+    compute_daily_totals,
+    compute_hourly_profile,
+    compute_modal_split,
+    compute_period_totals,
+    compute_speed_distribution,
+    compute_speed_summary,
+)
+from analysis.align import (
+    WEEKDAY_LABELS,
+    compute_typical_week,
+    compute_weekday_occurrence_totals,
+    compute_weekday_totals,
+    weekday_hour_matrix,
+)
+from analysis.comparisons import (
+    aggregate,
+    build_before_after,
+    by_kind,
+    describe_instances,
+    holiday_vs_term,
+    latest_year,
+    resolve,
+    year_on_year,
+)
+from analysis.filters import (
+    add_time_columns,
+    add_weekday_occurrence,
+    drop_exclusions,
+    filter_days_of_week,
+    filter_time_of_day,
+    get_available_modalities,
+    get_speed_hist_columns,
+    keep_assigned,
+    keep_labels,
+    label_periods,
+)
+from analysis.trends import (
+    compute_daily_trend,
+    daily_total_series,
+    rolling_mean,
+    weekday_adjusted_trend,
+)
+
+__all__ = [
+    "WEEKDAY_LABELS",
+    "add_time_columns",
+    "add_weekday_occurrence",
+    "aggregate",
+    "build_before_after",
+    "by_kind",
+    "compute_daily_totals",
+    "compute_daily_trend",
+    "compute_hourly_profile",
+    "compute_modal_split",
+    "compute_period_totals",
+    "compute_speed_distribution",
+    "compute_speed_summary",
+    "compute_typical_week",
+    "compute_weekday_occurrence_totals",
+    "compute_weekday_totals",
+    "daily_total_series",
+    "describe_instances",
+    "drop_exclusions",
+    "filter_days_of_week",
+    "filter_time_of_day",
+    "get_available_modalities",
+    "get_speed_hist_columns",
+    "holiday_vs_term",
+    "keep_assigned",
+    "keep_labels",
+    "label_periods",
+    "latest_year",
+    "resolve",
+    "rolling_mean",
+    "weekday_adjusted_trend",
+    "weekday_hour_matrix",
+    "year_on_year",
+]
