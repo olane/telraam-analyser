@@ -58,6 +58,15 @@ def render() -> None:
         else pd.DataFrame()
     )
 
+    # Compare mean daily counts, not raw totals: period lengths differ a lot
+    # (a one-week half term vs a six-week term), so totals are misleading.
+    per_period_daily = pd.Series(dtype=float)
+    if not assigned.empty:
+        daily = compute_daily_totals(assigned, modalities)
+        if not daily.empty:
+            daily = daily.assign(total=daily[modalities].sum(axis=1))
+            per_period_daily = daily.groupby("period_label")["total"].mean()
+
     items: list[dict] = [
         {"label": "Hourly rows", "value": f"{len(controls.df):,}"},
         {"label": "Periods", "value": str(len(controls.instances))},
@@ -69,14 +78,18 @@ def render() -> None:
             {"label": "Mean daily count", "value": f"{mean_daily:,.0f}"}
         )
 
-    if len(totals) >= 2:
-        first, second = totals.iloc[0], totals.iloc[1]
+    if len(per_period_daily) >= 2:
+        first_label = per_period_daily.index[0]
+        second_label = per_period_daily.index[1]
         items.append(
             {
-                "label": f"{second['period_label']} vs {first['period_label']}",
-                "value": f"{second['total']:,.0f}",
-                "delta": _pct_delta(first["total"], second["total"]),
-                "help": "Total counts across selected modalities.",
+                "label": f"{second_label} vs {first_label}",
+                "value": f"{per_period_daily[second_label]:,.0f}",
+                "delta": _pct_delta(
+                    per_period_daily[first_label],
+                    per_period_daily[second_label],
+                ),
+                "help": "Mean daily count across selected modalities.",
             }
         )
 

@@ -17,12 +17,25 @@ def _add_bands(
     annotated: set[str] = set()
     for instance in instances or []:
         colour = KIND_COLOURS.get(instance.kind.value, "#7f7f7f")
+
+        # Terms are only marked with a thin boundary line: filling every term
+        # band would tint almost the whole timeline. Holidays and special
+        # periods get a shaded band and a label.
+        if instance.kind.is_term:
+            for start, _ in instance.ranges:
+                fig.add_vline(
+                    x=pd.Timestamp(start),
+                    line=dict(color="#b0bec5", width=1, dash="dot"),
+                    layer="below",
+                )
+            continue
+
         for start, end in instance.ranges:
             fig.add_vrect(
                 x0=pd.Timestamp(start),
                 x1=pd.Timestamp(end),
                 fillcolor=colour,
-                opacity=0.10,
+                opacity=0.18,
                 line_width=0,
                 layer="below",
             )
