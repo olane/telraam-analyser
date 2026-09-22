@@ -44,3 +44,5 @@ Requires `TELRAAM_API_KEY` and `TELRAAM_SEGMENT_IDS` — from `.env` locally or
 - Modalities: pedestrian, bike, car, heavy, night (+ _lft/_rgt variants for S2)
 - Telraam data is CC BY-NC 4.0 — keep the attribution footer, no commercial use,
   aggregate-only exports
+- No browser in most agent containers: use `scripts/render_previews.py` to render
+  synthetic-data previews into `docs/screenshots/` instead of screenshots

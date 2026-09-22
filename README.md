@@ -76,8 +76,25 @@ Source for Cambridge term dates:
 pytest
 ```
 
-The suite covers the pure domain/analysis layer plus a smoke test that renders
-every chart and view with synthetic data (no network required).
+The suite covers the pure domain/analysis layer, structural checks on the
+Plotly figures, plus a smoke test that renders every view with synthetic data
+(no network required).
+
+## Preview images
+
+Many agent containers have no browser, so real screenshots aren't always
+possible. `scripts/render_previews.py` draws representative images of the four
+views with matplotlib using the **same** analysis functions the app uses. It
+runs on synthetic data and needs no API key:
+
+```bash
+pip install -e ".[dev]"
+python scripts/render_previews.py            # writes docs/screenshots/
+python scripts/render_previews.py --out /tmp/pv --dpi 110
+```
+
+Reference the generated PNGs from a PR with raw GitHub URLs, e.g.
+`https://raw.githubusercontent.com/<owner>/<repo>/<branch>/docs/screenshots/02_trends.png`.
 
 ## Architecture
 
