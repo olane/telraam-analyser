@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from datetime import date, timedelta
-from typing import Callable
 
 import pandas as pd
 import requests
 
-from models import FetchParams
+from domain.models import FetchParams
 
 API_BASE = "https://telraam-api.net/v1"
 MAX_CHUNK_DAYS = 90
@@ -83,6 +83,12 @@ class TelraamClient:
             df["night"] = df["night_lft"] + df["night_rgt"]
 
         return df
+
+
+def chunk_count(start: date, end: date) -> int:
+    """Number of 90-day API requests a date range will require (>=1)."""
+    days = (end - start).days
+    return max(1, (days + MAX_CHUNK_DAYS - 1) // MAX_CHUNK_DAYS)
 
 
 def _split_into_chunks(params: FetchParams) -> list[FetchParams]:
