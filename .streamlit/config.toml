@@ -7,6 +7,11 @@ font = "sans serif"
 
 [server]
 headless = true
+address = "0.0.0.0"
+port = 8501
+# Required when running behind a reverse proxy (Caddy/Traefik).
+enableCORS = false
+enableXsrfProtection = false
 
 [browser]
 gatherUsageStats = false

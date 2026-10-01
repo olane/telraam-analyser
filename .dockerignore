@@ -1,0 +1,14 @@
+.git
+.github
+.gitignore
+.venv
+__pycache__
+*.pyc
+*.egg-info
+.pytest_cache
+.paseo-tmp
+
+# Runtime data and secrets (mounted/provided at deploy time)
+.env
+data/
+.streamlit/secrets.toml

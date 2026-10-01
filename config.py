@@ -61,9 +61,13 @@ class Config:
         except ValueError:
             budget = DEFAULT_DAILY_BUDGET
 
+        cache_dir_raw = _setting("TELRAAM_CACHE_DIR")
+        cache_dir = Path(cache_dir_raw) if cache_dir_raw else Path("data")
+
         return cls(
             api_key=api_key,
             segment_ids=segment_ids,
+            cache_dir=cache_dir,
             daily_request_budget=budget,
             allow_all_segments=_as_bool(_setting("TELRAAM_ALLOW_ALL_SEGMENTS")),
         )
