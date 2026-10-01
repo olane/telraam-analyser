@@ -72,7 +72,9 @@ def test_overview_renders_kpis():
     assert any(metric.delta for metric in at.metric)
 
 
-def test_trends_has_modality_filter():
+def test_trends_modality_filters_offer_all():
     at = AppTest.from_function(_view_script, default_timeout=30).run()
     assert not at.exception
-    assert any(box.label == "Trend modality" for box in at.selectbox)
+    boxes = {box.label: box for box in at.selectbox}
+    assert "All" in boxes["Trend modality"].options
+    assert "All" in boxes["Weekday comparison modality"].options

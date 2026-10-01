@@ -21,6 +21,21 @@ from charts import (
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
+ALL_OPTION = "All"
+
+
+def _modality_frame(df, modalities: list[str], choice: str):
+    """Resolve a modality choice to (frame, column, display name).
+
+    When *choice* is ``"All"`` a combined ``total`` column is added so the
+    single-column aggregations can be reused unchanged.
+    """
+    if choice == ALL_OPTION:
+        frame = df.copy()
+        frame["total"] = frame[modalities].sum(axis=1)
+        return frame, "total", "all selected modalities"
+    return df, choice, choice
+
 
 def render() -> None:
     page_header(
@@ -49,7 +64,7 @@ def render() -> None:
     top_left, top_right = st.columns([2, 1])
     trend_choice = top_left.selectbox(
         "Trend modality",
-        ["All selected modalities", *modalities],
+        [ALL_OPTION, *modalities],
         key="trend_modality",
         help="Show a single mode, or the combined total of every mode selected "
         "in the sidebar.",
@@ -57,12 +72,10 @@ def render() -> None:
     window = top_right.slider("Rolling average (days)", 3, 28, 7)
 
     trend_modalities = (
-        modalities if trend_choice == "All selected modalities" else [trend_choice]
+        modalities if trend_choice == ALL_OPTION else [trend_choice]
     )
     trend_label = (
-        "all selected modes"
-        if trend_choice == "All selected modalities"
-        else trend_choice
+        "all selected modalities" if trend_choice == ALL_OPTION else trend_choice
     )
 
     trend = compute_daily_trend(df, trend_modalities, window)
@@ -101,13 +114,20 @@ def render() -> None:
         return
 
     st.subheader("Weekday comparison")
-    daily = compute_daily_totals(assigned, modalities)
-    weekday_df = compute_weekday_totals(daily, modalities)
-    modality = st.selectbox(
-        "Weekday comparison modality", modalities, key="trend_wd_modality"
+    comparison_choice = st.selectbox(
+        "Weekday comparison modality",
+        [ALL_OPTION, *modalities],
+        key="trend_wd_modality",
+        help="Show a single mode, or the combined total of every mode selected "
+        "in the sidebar.",
     )
+    daily_frame, daily_col, daily_display = _modality_frame(
+        assigned, modalities, comparison_choice
+    )
+    daily = compute_daily_totals(daily_frame, [daily_col])
+    weekday_df = compute_weekday_totals(daily, [daily_col])
     st.plotly_chart(
-        plot_weekday_comparison(weekday_df, modality),
+        plot_weekday_comparison(weekday_df, daily_col),
         use_container_width=True,
         key="trend_weekday_comparison",
     )
@@ -115,13 +135,14 @@ def render() -> None:
     st.subheader("Typical week")
     labels = list(dict.fromkeys(assigned["period_label"]))
     chosen = st.selectbox("Period", labels, key="trend_typical_period")
-    typical = compute_typical_week(
-        assigned[assigned["period_label"] == chosen], modalities
+    typical_frame, typical_col, typical_display = _modality_frame(
+        assigned[assigned["period_label"] == chosen], modalities, comparison_choice
     )
-    matrix = weekday_hour_matrix(typical, chosen, modality)
+    typical = compute_typical_week(typical_frame, [typical_col])
+    matrix = weekday_hour_matrix(typical, chosen, typical_col)
     st.plotly_chart(
         plot_typical_week(
-            matrix, title=f"Typical week — {chosen} — {modality}"
+            matrix, title=f"Typical week — {chosen} — {typical_display}"
         ),
         use_container_width=True,
         key="trend_typical_week",
