@@ -65,6 +65,36 @@ trends. This app fills that gap.
    streamlit run app.py
    ```
 
+## Running with Docker
+
+The app ships with a `Dockerfile`, so it can run without a local Python install:
+
+```bash
+docker build -t telraam-analyser .
+
+docker run -d --name telraam-analyser \
+  --env-file .env \
+  -v telraam-data:/data \
+  -p 8501:8501 \
+  telraam-analyser
+```
+
+Then open <http://localhost:8501>.
+
+The image runs as a non-root user and stores its parquet cache (and the
+file-backed request budget) under `/data`:
+
+| Env var | Default (in image) | Purpose |
+| --- | --- | --- |
+| `TELRAAM_API_KEY` | — | Telraam API key (required) |
+| `TELRAAM_SEGMENT_IDS` | — | Comma-separated segment allowlist (required) |
+| `TELRAAM_CACHE_DIR` | `/data/cache` | Parquet cache + `.budget.json` location |
+| `TELRAAM_DAILY_BUDGET` | `900` | Max upstream requests per day |
+| `TELRAAM_ALLOW_ALL_SEGMENTS` | `false` | Allow querying any segment ID |
+
+Mount a volume at `/data` to persist the cache across container restarts.
+Prebuilt images are published to `ghcr.io/olane/telraam-analyser`.
+
 ## Calendars
 
 Academic calendars live in `domain/calendars.py`. Only the Cambridge 2025-26

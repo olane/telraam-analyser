@@ -46,3 +46,13 @@ Requires `TELRAAM_API_KEY` and `TELRAAM_SEGMENT_IDS` — from `.env` locally or
   aggregate-only exports
 - No browser in most agent containers: use `scripts/render_previews.py` to render
   synthetic-data previews into `docs/screenshots/` instead of screenshots
+
+## Deployment
+- `Dockerfile` builds a non-root Streamlit image; `CMD` serves on `0.0.0.0:8501`
+- Published to GHCR as `ghcr.io/olane/telraam-analyser` by
+  `.github/workflows/publish.yml` on pushes to `main`
+- Consumed by the homelab stack (`olane/pod-internal-docker`) behind Caddy at
+  `telraam.olane.dev` (LAN-only)
+- Cache path is env-configurable via `TELRAAM_CACHE_DIR` (default `data`); the
+  image points it at `/data/cache`, so a single `/data` volume persists the
+  parquet cache and the file-backed request budget
