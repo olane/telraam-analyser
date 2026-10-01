@@ -19,6 +19,14 @@ dev = ["pytest>=8.0", "ruff>=0.6", "matplotlib>=3.8"]
 requires = ["setuptools>=68.0"]
 build-backend = "setuptools.build_meta"
 
+# Explicit discovery: flat-layout auto-discovery fails with multiple
+# top-level packages.
+[tool.setuptools]
+py-modules = ["api_client", "cache", "config", "guard"]
+
+[tool.setuptools.packages.find]
+include = ["analysis*", "charts*", "domain*", "ui*", "views*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
