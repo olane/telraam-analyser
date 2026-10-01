@@ -32,13 +32,18 @@ trends. This app fills that gap.
 
 ## Setup
 
-1. Create a virtual environment and install:
+1. Create a virtual environment and install (Python **3.9+** is supported;
+   3.10+ recommended):
 
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
    pip install -e ".[dev]"
    ```
+
+   On macOS the system `python3` can be old (e.g. 3.9.6). If
+   `python3 --version` is below 3.9, use a newer interpreter, e.g.
+   `python3.12 -m venv .venv`.
 
 2. Provide credentials. Either copy `.env.example` to `.env`:
 
