@@ -46,13 +46,32 @@ def render() -> None:
         st.warning("No data matches the current filters.")
         return
 
-    window = st.slider("Rolling average window (days)", 3, 28, 7)
-    trend = compute_daily_trend(df, modalities, window)
+    top_left, top_right = st.columns([2, 1])
+    trend_choice = top_left.selectbox(
+        "Trend modality",
+        ["All selected modalities", *modalities],
+        key="trend_modality",
+        help="Show a single mode, or the combined total of every mode selected "
+        "in the sidebar.",
+    )
+    window = top_right.slider("Rolling average (days)", 3, 28, 7)
+
+    trend_modalities = (
+        modalities if trend_choice == "All selected modalities" else [trend_choice]
+    )
+    trend_label = (
+        "all selected modes"
+        if trend_choice == "All selected modalities"
+        else trend_choice
+    )
+
+    trend = compute_daily_trend(df, trend_modalities, window)
     st.plotly_chart(
         plot_daily_trend(
             trend,
             instances=controls.instances,
             exclusions=controls.exclusions,
+            title=f"Traffic trend — {trend_label}",
             rolling_label=f"{window}-day average",
         ),
         use_container_width=True,
@@ -64,12 +83,13 @@ def render() -> None:
         "Each day is shown relative to the average for that weekday, so the "
         "weekly cycle doesn't hide the underlying direction of travel."
     )
-    adjusted = weekday_adjusted_trend(df, modalities)
+    adjusted = weekday_adjusted_trend(df, trend_modalities)
     st.plotly_chart(
         plot_weekday_adjusted_trend(
             adjusted,
             instances=controls.instances,
             exclusions=controls.exclusions,
+            title=f"Weekday-adjusted trend — {trend_label}",
         ),
         use_container_width=True,
         key="trend_weekday_adjusted",
@@ -83,7 +103,9 @@ def render() -> None:
     st.subheader("Weekday comparison")
     daily = compute_daily_totals(assigned, modalities)
     weekday_df = compute_weekday_totals(daily, modalities)
-    modality = st.selectbox("Modality", modalities, key="trend_wd_modality")
+    modality = st.selectbox(
+        "Weekday comparison modality", modalities, key="trend_wd_modality"
+    )
     st.plotly_chart(
         plot_weekday_comparison(weekday_df, modality),
         use_container_width=True,

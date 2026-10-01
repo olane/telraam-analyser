@@ -70,3 +70,9 @@ def test_overview_renders_kpis():
     assert len(at.metric) >= 4
     # The period comparison KPI carries a percentage delta.
     assert any(metric.delta for metric in at.metric)
+
+
+def test_trends_has_modality_filter():
+    at = AppTest.from_function(_view_script, default_timeout=30).run()
+    assert not at.exception
+    assert any(box.label == "Trend modality" for box in at.selectbox)
