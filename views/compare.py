@@ -6,20 +6,70 @@ import streamlit as st
 
 from analysis import (
     compute_daily_totals,
+    compute_daily_trend,
     compute_hourly_profile,
     compute_modal_split,
     compute_weekday_totals,
 )
 from charts import (
+    plot_daily_trend,
     plot_hourly_profile,
     plot_modal_split,
     plot_weekday_comparison,
 )
+from domain.models import ComparisonMode, InterventionFilter
 from ui.components import ALL_OPTION, typical_week_heatmaps
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
 GROUP_COL = "group_label"
+
+
+def _intervention_context(controls, modalities: list[str]) -> None:
+    """Trend over the loaded range with the compared windows shaded."""
+    full = prepared_df()
+    if full.empty:
+        return
+
+    date_filter = controls.comparison.date_filter
+    if date_filter is InterventionFilter.TERM_ONLY:
+        detail = (
+            "Only term-time dates inside each window are compared; the "
+            "shaded bands show exactly which days they are."
+        )
+    elif date_filter is InterventionFilter.HOLIDAYS_ONLY:
+        detail = (
+            "Only holiday dates inside each window are compared; the "
+            "shaded bands show exactly which days they are."
+        )
+    else:
+        detail = "Every date inside each window is compared."
+
+    st.subheader("What is being compared")
+    st.caption(
+        "Shaded windows are the periods used in the comparison below. "
+        + detail
+    )
+    trend = compute_daily_trend(full, modalities, window=7)
+    st.plotly_chart(
+        plot_daily_trend(
+            trend,
+            instances=controls.instances,
+            exclusions=controls.exclusions,
+            title="Traffic trend around the intervention",
+            rolling_label="7-day average",
+        ),
+        use_container_width=True,
+        key="compare_intervention_trend",
+    )
+
+    empty = [i.label for i in controls.instances if i.n_days == 0]
+    if empty:
+        st.warning(
+            "The current date filter leaves no dates in: "
+            + ", ".join(empty)
+            + ". Widen the window or change the dates to compare."
+        )
 
 
 def render() -> None:
@@ -40,6 +90,9 @@ def render() -> None:
     if not modalities:
         st.warning("Select at least one modality in the sidebar.")
         return
+
+    if controls.comparison.mode is ComparisonMode.BEFORE_AFTER:
+        _intervention_context(controls, modalities)
 
     df = prepared_df(keep_only_assigned=True)
     if df.empty:

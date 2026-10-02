@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, timedelta
 
 import pandas as pd
@@ -10,6 +11,8 @@ from domain.models import (
     Calendar,
     ComparisonConfig,
     ComparisonMode,
+    DateRange,
+    InterventionFilter,
     PeriodInstance,
     PeriodKind,
 )
@@ -101,6 +104,57 @@ def build_before_after(
     return instances
 
 
+def _merge_ranges(ranges: list[DateRange]) -> tuple[DateRange, ...]:
+    """Sort and coalesce overlapping or adjacent date ranges."""
+    if not ranges:
+        return ()
+    ordered = sorted(ranges)
+    merged = [list(ordered[0])]
+    for start, end in ordered[1:]:
+        if start <= merged[-1][1] + timedelta(days=1):
+            merged[-1][1] = max(merged[-1][1], end)
+        else:
+            merged.append([start, end])
+    return tuple((start, end) for start, end in merged)
+
+
+def _calendar_periods(
+    calendar: Calendar, date_filter: InterventionFilter
+) -> list[PeriodInstance]:
+    if date_filter is InterventionFilter.TERM_ONLY:
+        return [i for i in calendar.instances if i.kind.is_term]
+    return [i for i in calendar.instances if i.kind.is_holiday]
+
+
+def _clip_ranges(
+    window: DateRange,
+    calendar: Calendar,
+    date_filter: InterventionFilter,
+) -> tuple[DateRange, ...]:
+    """Intersect *window* with the calendar's term or holiday date ranges."""
+    start, end = window
+    overlaps: list[DateRange] = []
+    for instance in _calendar_periods(calendar, date_filter):
+        for period_start, period_end in instance.ranges:
+            overlap_start = max(start, period_start)
+            overlap_end = min(end, period_end)
+            if overlap_start <= overlap_end:
+                overlaps.append((overlap_start, overlap_end))
+    return _merge_ranges(overlaps)
+
+
+def _clip_instance(
+    instance: PeriodInstance,
+    calendar: Calendar,
+    date_filter: InterventionFilter,
+) -> PeriodInstance:
+    """Clip each of the instance's ranges to the calendar, then coalesce."""
+    clipped: list[DateRange] = []
+    for window in instance.ranges:
+        clipped.extend(_clip_ranges(window, calendar, date_filter))
+    return replace(instance, ranges=_merge_ranges(clipped))
+
+
 def resolve(
     calendar: Calendar, config: ComparisonConfig
 ) -> list[PeriodInstance]:
@@ -116,11 +170,17 @@ def resolve(
     if mode is ComparisonMode.BEFORE_AFTER:
         if config.cutover is None:
             return []
-        return build_before_after(
+        instances = build_before_after(
             config.cutover,
             config.window_days,
             config.include_previous_year,
         )
+        if config.date_filter is not InterventionFilter.ALL:
+            instances = [
+                _clip_instance(i, calendar, config.date_filter)
+                for i in instances
+            ]
+        return instances
 
     if mode is ComparisonMode.CUSTOM:
         out: list[PeriodInstance] = []

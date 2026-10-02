@@ -198,6 +198,22 @@ class ComparisonMode(str, Enum):
         }[self]
 
 
+class InterventionFilter(str, Enum):
+    """Which calendar dates inside a before/after window to actually compare."""
+
+    ALL = "all"
+    TERM_ONLY = "term_only"
+    HOLIDAYS_ONLY = "holidays_only"
+
+    @property
+    def human(self) -> str:
+        return {
+            InterventionFilter.ALL: "All dates",
+            InterventionFilter.TERM_ONLY: "Term time only",
+            InterventionFilter.HOLIDAYS_ONLY: "Holidays only",
+        }[self]
+
+
 @dataclass
 class ComparisonConfig:
     """User-chosen comparison recipe plus its parameters."""
@@ -209,6 +225,7 @@ class ComparisonConfig:
     cutover: date | None = None
     window_days: int = 56
     include_previous_year: bool = False
+    date_filter: InterventionFilter = InterventionFilter.ALL
 
 
 # Group labels shared by the comparison axes and their charts.

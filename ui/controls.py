@@ -20,6 +20,7 @@ from domain.models import (
     ComparisonMode,
     Exclusion,
     FilterSettings,
+    InterventionFilter,
     base_of,
     is_directional,
     modality_label,
@@ -107,6 +108,14 @@ def _periods(calendar: Calendar) -> ComparisonConfig:
         )
         config.include_previous_year = st.sidebar.checkbox(
             "Also show the same window last year", value=False
+        )
+        config.date_filter = st.sidebar.selectbox(
+            "Dates to compare",
+            list(InterventionFilter),
+            format_func=lambda f: f.human,
+            help="Restrict both windows to term time or holidays so like is "
+            "compared with like. Holidays falling in a window are dropped "
+            "when only term dates are compared, and vice versa.",
         )
 
     elif mode is ComparisonMode.CUSTOM:
