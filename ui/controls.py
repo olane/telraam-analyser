@@ -127,12 +127,13 @@ def _periods(calendar: Calendar) -> ComparisonConfig:
 def _filters(df) -> list[str]:
     """Global filters applied by every view; returns selected modalities."""
     st.sidebar.subheader("Filters")
-    st.session_state["_hour_range"] = st.sidebar.slider(
-        "Hours of day", 0, 23, (0, 23)
-    )
-    st.session_state["_day_labels"] = st.sidebar.multiselect(
-        "Days of week", DAY_LABELS, default=DAY_LABELS
-    )
+    with st.sidebar.expander("Advanced filters"):
+        st.session_state["_hour_range"] = st.slider(
+            "Hours of day", 0, 23, (0, 23)
+        )
+        st.session_state["_day_labels"] = st.multiselect(
+            "Days of week", DAY_LABELS, default=DAY_LABELS
+        )
     available = get_available_modalities(df) if df is not None else []
     combined = [m for m in available if not is_directional(m)]
     variants = [m for m in available if is_directional(m)]
