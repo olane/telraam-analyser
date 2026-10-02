@@ -137,6 +137,52 @@ def test_before_after_compare_renders_context_trend():
     assert not at.exception
 
 
+def _time_of_day_script() -> None:
+    import pandas as pd
+    import streamlit as st
+
+    import views.compare as compare
+    from analysis import resolve
+    from domain.calendars import default_calendar
+    from domain.models import (
+        ComparisonConfig,
+        ComparisonMode,
+        FilterSettings,
+    )
+    from ui.state import Controls
+
+    index = pd.date_range("2025-12-15", "2026-04-30 23:00", freq="h", tz="UTC")
+    df = pd.DataFrame(index=index)
+    df["pedestrian"] = 2.0
+    df["bike"] = 3.0
+    df["car"] = 10.0
+    df["heavy"] = 0.5
+
+    comparison = ComparisonConfig(mode=ComparisonMode.TIME_OF_DAY)
+    st.session_state["controls"] = Controls(
+        segment_id="123",
+        filters=FilterSettings(selected_modalities=["car", "bike"]),
+        exclusions=[],
+        instances=resolve(default_calendar(), comparison),
+        comparison=comparison,
+        df=df,
+    )
+    compare.render()
+
+
+def test_time_of_day_compare_hides_headline_kpis():
+    at = AppTest.from_function(_time_of_day_script, default_timeout=30).run()
+    assert not at.exception
+    headers = [h.value for h in at.subheader]
+    assert "Headline comparison" not in headers
+
+
+def test_sidebar_defaults_to_all_time():
+    from ui.controls import DEFAULT_RANGE
+
+    assert DEFAULT_RANGE == "All time"
+
+
 def test_typical_week_groups_follow_the_comparison_axis():
     import pandas as pd
 

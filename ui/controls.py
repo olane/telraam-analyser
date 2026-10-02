@@ -42,7 +42,7 @@ RANGE_PRESETS: dict[str, int | None] = {
     "Custom range": -1,
 }
 CUSTOM_RANGE = "Custom range"
-DEFAULT_RANGE = "Last 12 months"
+DEFAULT_RANGE = "All time"
 
 
 def _time_range(config) -> tuple[date, date]:

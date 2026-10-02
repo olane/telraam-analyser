@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 
-from charts.theme import modality_colour, period_colour_map
+from charts.theme import legend_below, modality_colour, period_colour_map
 
 _DASH_STYLES = ["solid", "dash", "dot", "dashdot", "longdash", "longdashdot"]
 _MARKER_SYMBOLS = ["circle", "square", "diamond", "cross", "x", "triangle-up"]
@@ -14,7 +14,7 @@ _MARKER_SYMBOLS = ["circle", "square", "diamond", "cross", "x", "triangle-up"]
 def plot_hourly_profile(
     profile_df: pd.DataFrame,
     modalities: list[str],
-    height: int = 440,
+    height: int = 500,
     group_col: str = "period_label",
 ) -> go.Figure:
     """Line chart: hour on x-axis, one trace per (group, modality)."""
@@ -55,4 +55,4 @@ def plot_hourly_profile(
         xaxis=dict(dtick=1),
         height=height,
     )
-    return fig
+    return legend_below(fig, margin_bottom=140)
