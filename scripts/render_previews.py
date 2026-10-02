@@ -350,10 +350,13 @@ def render_compare(out_dir: Path, dpi: int):
         assigned, MODALITIES, group_col="group_label"
     )
     split = compute_modal_split(assigned, MODALITIES, group_col="group_label")
-    groups = list(dict.fromkeys(weekday_df["group_label"]))
+    typical = compute_typical_week(
+        assigned, MODALITIES, group_col="group_label"
+    )
+    groups = list(dict.fromkeys(assigned["group_label"].dropna()))
 
-    fig = plt.figure(figsize=(12, 9))
-    gs = fig.add_gridspec(2, 2, hspace=0.4, wspace=0.25)
+    fig = plt.figure(figsize=(12, 13))
+    gs = fig.add_gridspec(3, 2, hspace=0.5, wspace=0.25)
 
     ax1 = fig.add_subplot(gs[0, 0])
     x = np.arange(7)
@@ -376,7 +379,19 @@ def render_compare(out_dir: Path, dpi: int):
     ax2.set_xlabel("Hour")
     ax2.legend(frameon=False)
 
-    ax3 = fig.add_subplot(gs[1, 0])
+    for i, group in enumerate(groups[:2]):
+        ax = fig.add_subplot(gs[1, i])
+        matrix = weekday_hour_matrix(typical, group, "car", group_col="group_label")
+        ax.imshow(matrix.values, aspect="auto", cmap="Blues")
+        ax.set_yticks(range(7))
+        ax.set_yticklabels(list(matrix.index))
+        ax.set_xticks(range(0, 24, 3))
+        ax.set_xticklabels(list(range(0, 24, 3)))
+        titled(ax, f"Typical week — {group}, cars")
+        ax.set_xlabel("Hour of day")
+        ax.grid(False)
+
+    ax3 = fig.add_subplot(gs[2, 0])
     xm = np.arange(len(MODALITIES))
     for i, group in enumerate(groups):
         row = split[split["group_label"] == group].iloc[0]
@@ -387,7 +402,7 @@ def render_compare(out_dir: Path, dpi: int):
     titled(ax3, "Modal split (%)")
     ax3.legend(frameon=False)
 
-    ax4 = fig.add_subplot(gs[1, 1])
+    ax4 = fig.add_subplot(gs[2, 1])
     for i, group in enumerate(groups):
         subset = profile[profile["group_label"] == group].sort_values("hour")
         ax4.plot(subset.hour, subset.bike, marker="o", ms=3, label=group,

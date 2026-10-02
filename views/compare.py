@@ -15,6 +15,7 @@ from charts import (
     plot_modal_split,
     plot_weekday_comparison,
 )
+from ui.components import typical_week_heatmaps
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
@@ -61,6 +62,15 @@ def render() -> None:
         plot_weekday_comparison(weekday_df, modality, group_col=GROUP_COL),
         use_container_width=True,
         key="compare_weekday",
+    )
+
+    st.divider()
+    typical_week_heatmaps(
+        df,
+        modalities,
+        modality,
+        controls.comparison,
+        key_prefix="compare_typical",
     )
 
     st.divider()

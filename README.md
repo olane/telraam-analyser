@@ -33,6 +33,8 @@ trends. This app fills that gap.
   comparison axis (one plot per group, e.g. weekday vs weekend). Periods are
   shaded as bands on the timeline, clipped to the loaded data so future
   calendar years don't add blank space.
+- **Compare** — weekday-aligned bars, per-group typical-week heatmaps, hourly
+  profiles and modal split, all grouped by the chosen comparison axis.
 - **Exclusions** — drop roadworks, closures or other anomalies from analysis;
   excluded ranges are shown on the trend chart.
 - **Speed, modal split and hourly profiles** — a speed distribution and a V85
