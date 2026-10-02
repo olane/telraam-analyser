@@ -188,6 +188,42 @@ def test_sidebar_defaults_to_all_time():
     assert DEFAULT_RANGE == "All time"
 
 
+def _trends_controls_script() -> None:
+    import streamlit as st
+
+    from domain.calendars import default_calendar
+    from ui.controls import _grouping, _mark_periods
+
+    st.session_state.setdefault("exclusions", [])
+    calendar = default_calendar()
+    _grouping(calendar, "Trends")
+    _mark_periods(calendar)
+
+
+def _compare_controls_script() -> None:
+    import streamlit as st
+
+    from domain.calendars import default_calendar
+    from ui.controls import _grouping
+
+    st.session_state.setdefault("exclusions", [])
+    _grouping(default_calendar(), "Compare")
+
+
+def test_trends_hides_grouping_axis_but_offers_marking():
+    at = AppTest.from_function(_trends_controls_script, default_timeout=30).run()
+    assert not at.exception
+    selectbox_labels = {box.label for box in at.selectbox}
+    assert "Group charts by" not in selectbox_labels
+    assert "Mark periods" in {box.label for box in at.multiselect}
+
+
+def test_comparison_pages_show_the_grouping_axis():
+    at = AppTest.from_function(_compare_controls_script, default_timeout=30).run()
+    assert not at.exception
+    assert {box.label for box in at.selectbox} == {"Group charts by"}
+
+
 def test_typical_week_groups_follow_the_comparison_axis():
     import pandas as pd
 
