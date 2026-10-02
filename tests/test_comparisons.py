@@ -47,20 +47,21 @@ def test_holiday_vs_term_groups():
     )
 
 
-def test_year_on_year_single_year_returns_one():
+def test_year_on_year_returns_one_per_year():
     instances = year_on_year(default_calendar(), PeriodKind.CHRISTMAS)
-    assert len(instances) == 1
-    assert instances[0].kind is PeriodKind.CHRISTMAS
+    assert len(instances) == 2
+    assert all(i.kind is PeriodKind.CHRISTMAS for i in instances)
+    assert [i.academic_year for i in instances] == ["2025-26", "2026-27"]
 
 
 def test_by_kind_returns_holidays_for_year():
     instances = by_kind(default_calendar(), [PeriodKind.EASTER, PeriodKind.MAY_HALF])
     assert {i.kind for i in instances} == {PeriodKind.EASTER, PeriodKind.MAY_HALF}
-    assert all(i.academic_year == "2025-26" for i in instances)
+    assert all(i.academic_year == "2026-27" for i in instances)
 
 
 def test_latest_year():
-    assert latest_year(default_calendar()) == "2025-26"
+    assert latest_year(default_calendar()) == "2026-27"
 
 
 def test_all_mode_filters_by_year():

@@ -101,8 +101,8 @@ Prebuilt images are published to `ghcr.io/olane/telraam-analyser`.
 
 ## Calendars
 
-Academic calendars live in `domain/calendars.py`. Only the Cambridge 2025-26
-year is populated today. Add a year by copying the `"2025-26"` block in
+Academic calendars live in `domain/calendars.py`. The Cambridge 2025-26 and
+2026-27 years are populated. Add a year by copying an existing block in
 `CAMBRIDGE_YEARS` and changing the dates — year-on-year comparisons then work
 automatically.
 
