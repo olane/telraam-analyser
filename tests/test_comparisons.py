@@ -13,6 +13,7 @@ from domain.calendars import default_calendar
 from domain.models import (
     ComparisonConfig,
     ComparisonMode,
+    InterventionFilter,
     PeriodKind,
 )
 
@@ -34,6 +35,56 @@ def test_before_after_previous_year_option():
     assert len(instances) == 3
     baseline = instances[2]
     assert len(baseline.ranges) == 2
+
+
+def test_before_after_term_filter_clips_each_window():
+    calendar = default_calendar()
+    before, after = resolve(
+        calendar,
+        ComparisonConfig(
+            mode=ComparisonMode.BEFORE_AFTER,
+            cutover=date(2026, 2, 23),
+            window_days=28,
+            date_filter=InterventionFilter.TERM_ONLY,
+        ),
+    )
+    # The before window stops at the start of the February half term.
+    assert before.ranges == ((date(2026, 1, 26), date(2026, 2, 13)),)
+    # The after window sits entirely inside Spring 2 term time.
+    assert after.ranges == ((date(2026, 2, 23), date(2026, 3, 22)),)
+
+
+def test_before_after_holiday_filter_isolates_holidays():
+    calendar = default_calendar()
+    before, after = resolve(
+        calendar,
+        ComparisonConfig(
+            mode=ComparisonMode.BEFORE_AFTER,
+            cutover=date(2026, 2, 23),
+            window_days=28,
+            date_filter=InterventionFilter.HOLIDAYS_ONLY,
+        ),
+    )
+    assert before.ranges == ((date(2026, 2, 16), date(2026, 2, 20)),)
+    # No holiday falls in the after window, so it has no compared dates.
+    assert after.ranges == ()
+
+
+def test_before_after_previous_year_is_clipped_per_year():
+    calendar = default_calendar()
+    instances = resolve(
+        calendar,
+        ComparisonConfig(
+            mode=ComparisonMode.BEFORE_AFTER,
+            cutover=date(2026, 12, 14),
+            window_days=14,
+            include_previous_year=True,
+            date_filter=InterventionFilter.HOLIDAYS_ONLY,
+        ),
+    )
+    assert len(instances) == 3
+    # The baseline is clipped against the previous year's calendar.
+    assert instances[2].ranges == ((date(2025, 12, 22), date(2025, 12, 28)),)
 
 
 def test_holiday_vs_term_groups():

@@ -7,6 +7,7 @@ from domain.models import (
     ComparisonMode,
     Exclusion,
     FilterSettings,
+    InterventionFilter,
     PeriodInstance,
     PeriodKind,
 )
@@ -17,6 +18,7 @@ __all__ = [
     "ComparisonMode",
     "Exclusion",
     "FilterSettings",
+    "InterventionFilter",
     "PeriodInstance",
     "PeriodKind",
     "build_cambridge_calendar",

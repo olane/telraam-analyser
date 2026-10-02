@@ -80,6 +80,52 @@ def test_trends_modality_filter_offers_all():
     assert "All" in boxes["Trend modality"].options
 
 
+def _before_after_script() -> None:
+    from datetime import date
+
+    import pandas as pd
+    import streamlit as st
+
+    import views.compare as compare
+    from analysis import resolve
+    from domain.calendars import default_calendar
+    from domain.models import (
+        ComparisonConfig,
+        ComparisonMode,
+        FilterSettings,
+        InterventionFilter,
+    )
+    from ui.state import Controls
+
+    index = pd.date_range("2025-12-15", "2026-04-30 23:00", freq="h", tz="UTC")
+    df = pd.DataFrame(index=index)
+    df["pedestrian"] = 2.0
+    df["bike"] = 3.0
+    df["car"] = 10.0
+    df["heavy"] = 0.5
+
+    comparison = ComparisonConfig(
+        mode=ComparisonMode.BEFORE_AFTER,
+        cutover=date(2026, 2, 23),
+        window_days=56,
+        date_filter=InterventionFilter.TERM_ONLY,
+    )
+    st.session_state["controls"] = Controls(
+        segment_id="123",
+        filters=FilterSettings(selected_modalities=["car", "bike"]),
+        exclusions=[],
+        instances=resolve(default_calendar(), comparison),
+        comparison=comparison,
+        df=df,
+    )
+    compare.render()
+
+
+def test_before_after_compare_renders_context_trend():
+    at = AppTest.from_function(_before_after_script, default_timeout=30).run()
+    assert not at.exception
+
+
 def test_typical_week_groups_follow_the_comparison_axis():
     import pandas as pd
 
