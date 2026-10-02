@@ -110,8 +110,7 @@ class CacheManager:
             payload = json.loads(path.read_text())
             first = payload.get("first_data")
             return SegmentInfo(
-                first_data=date.fromisoformat(first) if first else None,
-                timezone=payload.get("timezone"),
+                first_data=date.fromisoformat(first) if first else None
             )
         except (OSError, ValueError, TypeError, AttributeError):
             return None
@@ -119,7 +118,6 @@ class CacheManager:
     def _save_segment_info(self, segment_id: str, info: SegmentInfo) -> None:
         payload = {
             "first_data": info.first_data.isoformat() if info.first_data else None,
-            "timezone": info.timezone,
         }
         try:
             self._segment_info_path(segment_id).write_text(json.dumps(payload))

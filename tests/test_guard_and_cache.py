@@ -213,5 +213,3 @@ def test_parse_segment_info_response():
     client._session = type("S", (), {"get": lambda self, url: Response()})()
     info = client.fetch_segment_info("9000001463")
     assert info.first_data == date(2022, 7, 4)
-    assert info.last_data == date(2024, 6, 20)
-    assert info.timezone == "Europe/Brussels"

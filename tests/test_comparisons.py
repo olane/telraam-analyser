@@ -5,7 +5,6 @@ from datetime import date
 from analysis.comparisons import (
     build_before_after,
     holiday_vs_term,
-    latest_year,
     resolve,
     year_on_year,
 )
@@ -102,10 +101,6 @@ def test_year_on_year_returns_one_per_year():
     assert len(instances) == 2
     assert all(i.kind is PeriodKind.CHRISTMAS for i in instances)
     assert [i.academic_year for i in instances] == ["2025-26", "2026-27"]
-
-
-def test_latest_year():
-    assert latest_year(default_calendar()) == "2026-27"
 
 
 def test_axis_modes_mark_every_period():

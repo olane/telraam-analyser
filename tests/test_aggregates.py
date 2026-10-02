@@ -71,6 +71,15 @@ def test_speed_summary_and_distribution_are_overall(make_df):
     assert math.isclose(dist.iloc[0].sum(), 100.0)
 
 
+def test_speed_summary_reports_days_without_v85(make_df):
+    df = make_df("2026-02-16", "2026-02-22 23:00", base=10.0)
+    df["car_speed_hist_0to120plus"] = [[50.0, 50.0]] * len(df)
+
+    summary = compute_speed_summary(df, unit="km/h")
+    assert "Days" in summary.columns
+    assert summary.iloc[0]["Days"] == 7
+
+
 def test_speed_trend_is_daily_with_rolling_mean(make_df):
     df = make_df("2026-02-16", "2026-02-22 23:00")
     df["v85"] = range(len(df))

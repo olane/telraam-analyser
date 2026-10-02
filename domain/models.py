@@ -273,8 +273,6 @@ class SegmentInfo:
     """A segment's known history window, from the segment metadata endpoint."""
 
     first_data: date | None = None
-    last_data: date | None = None
-    timezone: str | None = None
 
 
 # ---------------------------------------------------------------------------

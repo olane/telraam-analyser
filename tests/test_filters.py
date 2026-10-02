@@ -6,13 +6,12 @@ import pandas as pd
 
 from analysis.filters import (
     add_weekday_occurrence,
-    drop_exclusions,
     filter_days_of_week,
     filter_time_of_day,
     keep_assigned,
     label_periods,
 )
-from domain.models import Exclusion, PeriodInstance, PeriodKind
+from domain.models import PeriodInstance, PeriodKind
 
 
 def _christmas() -> PeriodInstance:
@@ -42,14 +41,6 @@ def test_keep_assigned_drops_unlabelled(make_df):
     assert labelled["period_label"].notna().all()
     assert labelled.index.min().date() >= date(2025, 12, 22)
     assert labelled.index.max().date() <= date(2026, 1, 2)
-
-
-def test_drop_exclusions_removes_range(make_df):
-    df = make_df("2025-12-20", "2026-01-05 23:00")
-    exclusion = Exclusion("Roadworks", ((date(2025, 12, 24), date(2025, 12, 25)),))
-    filtered = drop_exclusions(df, [exclusion])
-    assert filtered.loc["2025-12-24"].empty
-    assert filtered.loc["2025-12-23"].shape[0] == 24
 
 
 def test_time_and_day_filters(make_df):

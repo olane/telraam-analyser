@@ -156,10 +156,10 @@ def compute_speed_summary(
 
     if not row:
         return None
-    if has_v85:
-        row["Days"] = int(
-            df["v85"].notna().groupby(df.index.normalize()).any().sum()
-        )
+    days_source = "v85" if has_v85 else hist_col
+    row["Days"] = int(
+        df[days_source].notna().groupby(df.index.normalize()).any().sum()
+    )
     return pd.DataFrame([row])
 
 

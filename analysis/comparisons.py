@@ -29,11 +29,6 @@ def aggregate(
     return PeriodInstance(label=label, kind=kind, ranges=ranges)
 
 
-def latest_year(calendar: Calendar) -> str | None:
-    years = calendar.years()
-    return years[-1] if years else None
-
-
 # ---------------------------------------------------------------------------
 # Recipes
 # ---------------------------------------------------------------------------
