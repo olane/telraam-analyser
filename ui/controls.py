@@ -22,7 +22,7 @@ from domain.models import (
     FilterSettings,
 )
 from ui.components import attribution_footer
-from ui.state import Controls, ensure_data, reset_data
+from ui.state import Controls, ensure_data
 
 DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 DEFAULT_MODALITIES = ("pedestrian", "bike", "car", "heavy", "night")
@@ -193,9 +193,6 @@ def render_sidebar(config, calendar: Calendar) -> Controls:
         st.sidebar.error(error)
     elif df is not None and not df.empty:
         st.sidebar.caption(f"{len(df):,} hourly rows loaded")
-        if st.sidebar.button("Clear session cache"):
-            reset_data()
-            st.rerun()
 
     comparison = _periods(calendar)
     instances = resolve(calendar, comparison)
