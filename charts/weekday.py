@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 
 from analysis.align import WEEKDAY_LABELS
 from charts.theme import legend_below, period_colour_map
+from domain.models import modality_label
 
 
 def plot_weekday_comparison(
@@ -41,7 +42,7 @@ def plot_weekday_comparison(
         )
 
     fig.update_layout(
-        title=f"{modality.title()} by weekday",
+        title=f"{modality_label(modality)} by weekday",
         barmode="group",
         yaxis_title=value_label,
         xaxis_title="Weekday",

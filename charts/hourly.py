@@ -6,6 +6,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from charts.theme import legend_below, modality_colour, period_colour_map
+from domain.models import modality_label
 
 _DASH_STYLES = ["solid", "dash", "dot", "dashdot", "longdash", "longdashdot"]
 _MARKER_SYMBOLS = ["circle", "square", "diamond", "cross", "x", "triangle-up"]
@@ -31,6 +32,7 @@ def plot_hourly_profile(
     for mi, modality in enumerate(modalities):
         dash = _DASH_STYLES[mi % len(_DASH_STYLES)]
         marker = _MARKER_SYMBOLS[mi % len(_MARKER_SYMBOLS)]
+        label = modality_label(modality)
         for group in groups:
             subset = profile_df[profile_df[group_col] == group]
             colour = (
@@ -41,10 +43,10 @@ def plot_hourly_profile(
                     x=subset["hour"],
                     y=subset[modality],
                     mode="lines+markers",
-                    name=f"{group} — {modality}",
+                    name=f"{group} — {label}",
                     line=dict(color=colour, dash=dash, width=2),
                     marker=dict(symbol=marker, size=6),
-                    legendgroup=f"{group} — {modality}",
+                    legendgroup=f"{group} — {label}",
                 )
             )
 

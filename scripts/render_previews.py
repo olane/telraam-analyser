@@ -64,6 +64,7 @@ from domain.models import (  # noqa: E402
     ComparisonConfig,
     ComparisonMode,
     Exclusion,
+    modality_label,
 )
 
 plt.rcParams.update(
@@ -250,11 +251,6 @@ def render_overview(out_dir: Path, dpi: int):
     assigned = keep_assigned(label_periods(FRAME, holiday_vs_term(CAL)))
     totals = compute_period_totals(assigned, MODALITIES)
     mean_daily = period_mean_daily(assigned, MODALITIES)
-    delta = (
-        (mean_daily["School holidays"] - mean_daily["Term time"])
-        / mean_daily["Term time"]
-        * 100
-    )
     overall = compute_daily_totals(assigned, MODALITIES)[MODALITIES].sum(axis=1).mean()
 
     fig, ax = plt.subplots(figsize=(10, 5.6))
@@ -263,10 +259,9 @@ def render_overview(out_dir: Path, dpi: int):
                  fontsize=16, fontweight="bold")
 
     kpis = [
-        ("Hourly rows", f"{len(FRAME):,}"),
-        ("Groups", "2"),
         ("Mean daily count", f"{overall:,.0f}"),
-        ("Holidays vs term", f"{delta:+.1f}%"),
+        ("Term time", f"{mean_daily['Term time']:,.0f}"),
+        ("School holidays", f"{mean_daily['School holidays']:,.0f}"),
     ]
     for i, (label, value) in enumerate(kpis):
         x = 0.02 + i * 0.245
@@ -391,7 +386,7 @@ def render_compare(out_dir: Path, dpi: int):
                    color=PERIOD_COLOURS[j % len(PERIOD_COLOURS)])
         ax.set_xticks(x)
         ax.set_xticklabels(WEEKDAY_LABELS)
-        titled(ax, f"{modality.title()} by weekday")
+        titled(ax, f"{modality_label(modality)} by weekday")
         ax.legend(frameon=False)
 
     for i, group in enumerate(groups[:2]):
@@ -446,14 +441,14 @@ def render_detail(out_dir: Path, dpi: int):
     ax1.axis("off")
     titled(ax1, "Periods")
     periods = describe_instances(instances)
-    rows = [["Period", "Type", "Year", "Start", "End", "Days"]]
+    rows = [["Period", "Year", "Start", "End", "Days"]]
     for _, r in periods.iterrows():
         rows.append([
-            r.Period, r.Type, r.Year or "", str(r.Start), str(r.End), int(r.Days),
+            r.Period, r.Year or "", str(r.Start), str(r.End), int(r.Days),
         ])
     styled_table(
         ax1, rows, [0.0, 0.06, 1.0, 0.62],
-        [0.22, 0.22, 0.12, 0.16, 0.16, 0.1],
+        [0.32, 0.16, 0.18, 0.18, 0.12],
     )
 
     ax2 = fig.add_subplot(gs[1])

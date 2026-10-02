@@ -139,7 +139,7 @@ def _resolve_modality(df, modalities, choice):
         columns = dedupe_modalities(list(modalities))
         frame["total"] = frame[columns].sum(axis=1)
         return frame, "total", "all selected modalities"
-    return df, choice, choice
+    return df, choice, modality_label(choice)
 
 
 def _ordered_groups(df, group_col: str) -> list[str]:
