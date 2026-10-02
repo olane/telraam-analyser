@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from domain.models import MODALITY_ORDER, Exclusion, PeriodInstance
+from domain.models import (
+    MODALITY_ORDER,
+    Exclusion,
+    PeriodInstance,
+    is_directional,
+)
 
 # ---------------------------------------------------------------------------
 # Column detection
@@ -13,6 +18,23 @@ from domain.models import MODALITY_ORDER, Exclusion, PeriodInstance
 def get_available_modalities(df: pd.DataFrame) -> list[str]:
     """Return modality columns present in *df*, in a sensible order."""
     return [m for m in MODALITY_ORDER if m in df.columns]
+
+
+def dedupe_modalities(modalities: list[str]) -> list[str]:
+    """Drop a combined modality when its directional variants are selected.
+
+    ``car`` is the sum of ``car_lft`` and ``car_rgt``, so summing all three
+    double counts. Prefer the directional split when both are present.
+    """
+    selected = set(modalities)
+    out: list[str] = []
+    for modality in modalities:
+        if not is_directional(modality) and (
+            f"{modality}_lft" in selected or f"{modality}_rgt" in selected
+        ):
+            continue
+        out.append(modality)
+    return out
 
 
 def get_speed_hist_columns(df: pd.DataFrame) -> str | None:

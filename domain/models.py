@@ -275,7 +275,34 @@ MODALITY_LABELS = {
     "car": "Cars",
     "heavy": "Heavy vehicles",
     "night": "Night (all modes)",
+    "night_lft": "Night (left)",
+    "night_rgt": "Night (right)",
 }
+
+# S2 direction split variants carry a left/right suffix; their base column is
+# the sum of the two, so selecting both would double count.
+DIRECTIONAL_SUFFIXES = ("_lft", "_rgt")
+
+
+def is_directional(modality: str) -> bool:
+    """True for the left/right split variants (e.g. ``car_lft``)."""
+    return modality.endswith(DIRECTIONAL_SUFFIXES)
+
+
+def base_of(modality: str) -> str:
+    """Return the combined-modality name for a directional variant."""
+    base, sep, _ = modality.rpartition("_")
+    return base if sep else modality
+
+
+def modality_label(modality: str) -> str:
+    """Human-readable name for a modality column."""
+    if modality in MODALITY_LABELS:
+        return MODALITY_LABELS[modality]
+    if is_directional(modality):
+        side = "left" if modality.endswith("_lft") else "right"
+        return f"{modality_label(base_of(modality))} ({side})"
+    return modality.replace("_", " ").title()
 
 # Speed histogram bucket columns (V85 distribution)
 SPEED_BUCKETS = [

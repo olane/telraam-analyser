@@ -29,6 +29,7 @@ from analysis.comparisons import (
 from analysis.filters import (
     add_time_columns,
     add_weekday_occurrence,
+    dedupe_modalities,
     drop_exclusions,
     filter_days_of_week,
     filter_time_of_day,
@@ -63,6 +64,7 @@ __all__ = [
     "compute_weekday_occurrence_totals",
     "compute_weekday_totals",
     "daily_total_series",
+    "dedupe_modalities",
     "describe_instances",
     "drop_exclusions",
     "filter_days_of_week",

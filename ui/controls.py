@@ -12,7 +12,7 @@ from datetime import date, timedelta
 import pandas as pd
 import streamlit as st
 
-from analysis import get_available_modalities, resolve
+from analysis import dedupe_modalities, get_available_modalities, resolve
 from domain.models import (
     HOLIDAY_KINDS,
     Calendar,
@@ -20,6 +20,9 @@ from domain.models import (
     ComparisonMode,
     Exclusion,
     FilterSettings,
+    base_of,
+    is_directional,
+    modality_label,
 )
 from ui.components import attribution_footer
 from ui.state import Controls, ensure_data
@@ -143,8 +146,37 @@ def _filters(df) -> list[str]:
         "Days of week", DAY_LABELS, default=DAY_LABELS
     )
     available = get_available_modalities(df) if df is not None else []
-    defaults = [m for m in DEFAULT_MODALITIES if m in available]
-    return st.sidebar.multiselect("Modalities", available, default=defaults)
+    combined = [m for m in available if not is_directional(m)]
+    variants = [m for m in available if is_directional(m)]
+
+    defaults = [m for m in DEFAULT_MODALITIES if m in combined]
+    selected = list(
+        st.sidebar.multiselect(
+            "Modalities",
+            combined,
+            default=defaults,
+            format_func=modality_label,
+            help="Combined counts per transport mode.",
+        )
+    )
+
+    if variants:
+        if st.sidebar.checkbox(
+            "Split by direction (left / right)",
+            value=False,
+            help="Use the S2 left/right variants. Selecting a direction "
+            "replaces its combined total so counts are not double counted.",
+        ):
+            selected_variants = st.sidebar.multiselect(
+                "Directional modalities",
+                variants,
+                default=[m for m in variants if base_of(m) in selected],
+                format_func=modality_label,
+            )
+            selected += list(selected_variants)
+
+    # Never sum a combined mode and its direction split together.
+    return dedupe_modalities(selected)
 
 
 def _exclusions() -> None:

@@ -9,6 +9,7 @@ from analysis import (
     compute_daily_trend,
     compute_typical_week,
     compute_weekday_totals,
+    dedupe_modalities,
     weekday_adjusted_trend,
     weekday_hour_matrix,
 )
@@ -32,7 +33,8 @@ def _modality_frame(df, modalities: list[str], choice: str):
     """
     if choice == ALL_OPTION:
         frame = df.copy()
-        frame["total"] = frame[modalities].sum(axis=1)
+        columns = dedupe_modalities(list(modalities))
+        frame["total"] = frame[columns].sum(axis=1)
         return frame, "total", "all selected modalities"
     return df, choice, choice
 
