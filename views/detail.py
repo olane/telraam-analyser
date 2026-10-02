@@ -8,7 +8,7 @@ from analysis import (
     compute_modal_split,
     compute_period_totals,
 )
-from ui.components import csv_download, period_summary
+from ui.components import aggregate_table, csv_download, period_summary
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
@@ -41,12 +41,12 @@ def render() -> None:
     st.divider()
     st.subheader("Totals by group")
     totals = compute_period_totals(grouped, modalities, group_col="group_label")
-    st.dataframe(totals, use_container_width=True, hide_index=True)
+    aggregate_table(totals, "Group", decimals=0)
     csv_download(totals, "period_totals.csv", "Download totals (CSV)")
 
     st.subheader("Modal split (%)")
     split = compute_modal_split(grouped, modalities, group_col="group_label")
-    st.dataframe(split, use_container_width=True, hide_index=True)
+    aggregate_table(split, "Group", decimals=1)
     csv_download(split, "modal_split.csv", "Download modal split (CSV)")
 
     st.caption(

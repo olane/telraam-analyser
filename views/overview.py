@@ -10,9 +10,18 @@ from analysis import (
     daily_total_series,
     period_mean_daily,
 )
-from ui.components import format_pct_change, kpi_row, period_summary
+from ui.components import (
+    aggregate_table,
+    format_pct_change,
+    kpi_row,
+    period_summary,
+)
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
+
+# Cap the per-group cards so a many-period custom selection can't overflow the
+# KPI row; the full comparison is always in the totals table below.
+MAX_GROUP_CARDS = 4
 
 
 def _mean_daily(df: pd.DataFrame, modalities: list[str]) -> float | None:
@@ -35,7 +44,7 @@ def render() -> None:
         st.error(controls.error)
         return
     if controls.df is None or controls.df.empty:
-        st.info("No data loaded. Adjust the periods in the sidebar.")
+        st.info("No data loaded. Adjust the data controls in the sidebar.")
         return
 
     df = prepared_df()
@@ -46,12 +55,6 @@ def render() -> None:
         st.warning("Select at least one modality in the sidebar.")
         return
 
-    totals = (
-        compute_period_totals(assigned, modalities, group_col="group_label")
-        if not assigned.empty
-        else pd.DataFrame()
-    )
-
     # Compare mean daily counts, not raw totals: period lengths differ a lot
     # (a one-week half term vs a six-week term), so totals are misleading.
     per_period_daily = (
@@ -59,43 +62,59 @@ def render() -> None:
         if not assigned.empty
         else pd.Series(dtype=float)
     )
-
-    present = set(assigned["group_label"].dropna().unique())
-    items: list[dict] = [
-        {"label": "Hourly rows", "value": f"{len(controls.df):,}"},
-        {"label": "Groups", "value": str(len(present))},
-    ]
-
     mean_daily = _mean_daily(assigned, modalities)
+    present = set(assigned["group_label"].dropna().unique())
+
+    # Lead with the comparison itself; download counters belong in a caption.
+    items: list[dict] = []
     if mean_daily is not None:
         items.append(
-            {"label": "Mean daily count", "value": f"{mean_daily:,.0f}"}
-        )
-
-    if len(per_period_daily) >= 2:
-        first_label = per_period_daily.index[0]
-        second_label = per_period_daily.index[1]
-        items.append(
             {
-                "label": f"{second_label} vs {first_label}",
-                "value": f"{per_period_daily[second_label]:,.0f}",
-                "delta": format_pct_change(
-                    per_period_daily[first_label],
-                    per_period_daily[second_label],
-                ),
-                "help": "Mean daily count across selected modalities.",
+                "label": "Mean daily count",
+                "value": f"{mean_daily:,.0f}",
+                "help": "Average daily count across the selection.",
             }
         )
-
+    if not per_period_daily.empty:
+        baseline_label = per_period_daily.index[0]
+        baseline = float(per_period_daily.iloc[0])
+        for group, value in list(per_period_daily.items())[:MAX_GROUP_CARDS]:
+            is_baseline = group == baseline_label
+            items.append(
+                {
+                    "label": str(group),
+                    "value": f"{value:,.0f}",
+                    "delta": (
+                        None
+                        if is_baseline
+                        else format_pct_change(baseline, float(value))
+                    ),
+                    "help": (
+                        "Mean daily count (baseline)."
+                        if is_baseline
+                        else f"Mean daily count; change against {baseline_label}."
+                    ),
+                }
+            )
     kpi_row(items)
+
+    st.caption(
+        f"{len(controls.df):,} hourly rows loaded · {len(present)} groups in "
+        "the current comparison."
+    )
+
+    if not assigned.empty:
+        st.subheader("Totals by group")
+        totals = compute_period_totals(
+            assigned, modalities, group_col="group_label"
+        )
+        aggregate_table(totals, "Group", decimals=0)
 
     marked = set(df["period_label"].dropna().unique())
     shown = [i for i in controls.instances if i.label in marked]
     if shown:
-        st.subheader("Marked periods")
-        period_summary(
-            shown, caption="Periods marked on the trend charts."
-        )
+        st.subheader("Calendar periods")
+        period_summary(shown, caption="Periods marked on the trend charts.")
 
     if controls.exclusions:
         st.subheader("Excluded ranges")
@@ -112,10 +131,6 @@ def render() -> None:
             use_container_width=True,
             hide_index=True,
         )
-
-    if not totals.empty:
-        st.subheader("Totals by group")
-        st.dataframe(totals, use_container_width=True, hide_index=True)
 
     st.caption(
         "Tip: open **Trends** for long-term patterns and **Compare** for "

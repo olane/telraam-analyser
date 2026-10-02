@@ -195,16 +195,32 @@ def resolve(
 # ---------------------------------------------------------------------------
 
 def describe_instances(instances: list[PeriodInstance]) -> pd.DataFrame:
-    """Tabular summary of a set of periods, for display."""
+    """Tabular summary of a set of periods, for display.
+
+    The type is omitted because it repeats the label for aggregated periods
+    (a "Term time" period is of type "Term time"). Aggregated periods carry no
+    academic year, so fall back to the calendar-year span they cover rather
+    than showing a blank.
+    """
     rows = []
     for inst in instances:
+        start, end = inst.start, inst.end
+        if inst.academic_year:
+            year = inst.academic_year
+        elif start is not None and end is not None:
+            year = (
+                str(start.year)
+                if start.year == end.year
+                else f"{start.year}–{end.year}"
+            )
+        else:
+            year = ""
         rows.append(
             {
                 "Period": inst.label,
-                "Type": inst.kind.human,
-                "Year": inst.academic_year or "",
-                "Start": inst.start,
-                "End": inst.end,
+                "Year": year,
+                "Start": start,
+                "End": end,
                 "Days": inst.n_days,
             }
         )

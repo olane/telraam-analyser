@@ -6,6 +6,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from charts.theme import legend_below, period_colour_map
+from domain.models import modality_label
 
 
 def plot_modal_split(
@@ -28,7 +29,7 @@ def plot_modal_split(
         row = split_df[split_df[group_col] == group].iloc[0]
         fig.add_trace(
             go.Bar(
-                x=modalities,
+                x=[modality_label(m) for m in modalities],
                 y=[row[m] for m in modalities],
                 name=group,
                 marker_color=colours[group],

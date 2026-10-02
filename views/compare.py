@@ -141,52 +141,66 @@ def render() -> None:
         st.warning("No data matches the current filters or comparison.")
         return
 
+    daily = compute_daily_totals(df, modalities, group_col=GROUP_COL)
+    weekday_df = compute_weekday_totals(daily, modalities, group_col=GROUP_COL)
+
     # Time-of-day bands cover different numbers of hours, so a single mean
     # daily figure per band is not comparable and adds no value here.
-    if controls.comparison.mode is not ComparisonMode.TIME_OF_DAY:
-        _headline_comparison(
-            period_mean_daily(df, modalities, group_col=GROUP_COL)
+    show_headline = controls.comparison.mode is not ComparisonMode.TIME_OF_DAY
+    labels = (["Headline"] if show_headline else []) + [
+        "Weekday",
+        "Typical week",
+        "Hourly profile",
+        "Modal split",
+    ]
+    tabs = st.tabs(labels)
+    idx = 0
+
+    if show_headline:
+        with tabs[idx]:
+            _headline_comparison(
+                period_mean_daily(df, modalities, group_col=GROUP_COL)
+            )
+        idx += 1
+
+    with tabs[idx]:
+        st.subheader("Weekday comparison")
+        columns = st.columns(2)
+        for i, modality in enumerate(modalities):
+            columns[i % 2].plotly_chart(
+                plot_weekday_comparison(
+                    weekday_df, modality, group_col=GROUP_COL
+                ),
+                use_container_width=True,
+                key=f"compare_weekday_{modality}",
+            )
+    idx += 1
+
+    with tabs[idx]:
+        typical_week_heatmaps(
+            df,
+            modalities,
+            ALL_OPTION,
+            controls.comparison,
+            key_prefix="compare_typical",
         )
+    idx += 1
 
-    daily = compute_daily_totals(df, modalities, group_col=GROUP_COL)
-    weekday_df = compute_weekday_totals(
-        daily, modalities, group_col=GROUP_COL
-    )
-
-    st.subheader("Weekday comparison")
-    columns = st.columns(2)
-    for i, modality in enumerate(modalities):
-        columns[i % 2].plotly_chart(
-            plot_weekday_comparison(
-                weekday_df, modality, group_col=GROUP_COL
-            ),
+    with tabs[idx]:
+        st.subheader("Hourly profile")
+        profile = compute_hourly_profile(df, modalities, group_col=GROUP_COL)
+        st.plotly_chart(
+            plot_hourly_profile(profile, modalities, group_col=GROUP_COL),
             use_container_width=True,
-            key=f"compare_weekday_{modality}",
+            key="compare_hourly",
         )
+    idx += 1
 
-    st.divider()
-    typical_week_heatmaps(
-        df,
-        modalities,
-        ALL_OPTION,
-        controls.comparison,
-        key_prefix="compare_typical",
-    )
-
-    st.divider()
-    st.subheader("Hourly profile")
-    profile = compute_hourly_profile(df, modalities, group_col=GROUP_COL)
-    st.plotly_chart(
-        plot_hourly_profile(profile, modalities, group_col=GROUP_COL),
-        use_container_width=True,
-        key="compare_hourly",
-    )
-
-    st.divider()
-    st.subheader("Modal split")
-    split = compute_modal_split(df, modalities, group_col=GROUP_COL)
-    st.plotly_chart(
-        plot_modal_split(split, modalities, group_col=GROUP_COL),
-        use_container_width=True,
-        key="compare_modal",
-    )
+    with tabs[idx]:
+        st.subheader("Modal split")
+        split = compute_modal_split(df, modalities, group_col=GROUP_COL)
+        st.plotly_chart(
+            plot_modal_split(split, modalities, group_col=GROUP_COL),
+            use_container_width=True,
+            key="compare_modal",
+        )
