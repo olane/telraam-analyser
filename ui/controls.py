@@ -79,15 +79,11 @@ def _periods(calendar: Calendar) -> ComparisonConfig:
     )
     config = ComparisonConfig(mode=mode)
 
-    available_years = calendar.years()
+    # Every academic year is always included; the loaded time range, not a
+    # year picker, decides which dates are actually analysed.
     available_kinds = [k for k in HOLIDAY_KINDS if calendar.of_kind(k)]
 
-    if mode is ComparisonMode.HOLIDAY_VS_TERM:
-        config.years = st.sidebar.multiselect(
-            "Academic years", available_years, default=available_years
-        )
-
-    elif mode is ComparisonMode.YEAR_ON_YEAR:
+    if mode is ComparisonMode.YEAR_ON_YEAR:
         if available_kinds:
             config.kind = st.sidebar.selectbox(
                 "Holiday", available_kinds, format_func=lambda k: k.human
@@ -131,12 +127,13 @@ def _periods(calendar: Calendar) -> ComparisonConfig:
 def _filters(df) -> list[str]:
     """Global filters applied by every view; returns selected modalities."""
     st.sidebar.subheader("Filters")
-    st.session_state["_hour_range"] = st.sidebar.slider(
-        "Hours of day", 0, 23, (0, 23)
-    )
-    st.session_state["_day_labels"] = st.sidebar.multiselect(
-        "Days of week", DAY_LABELS, default=DAY_LABELS
-    )
+    with st.sidebar.expander("Advanced filters"):
+        st.session_state["_hour_range"] = st.slider(
+            "Hours of day", 0, 23, (0, 23)
+        )
+        st.session_state["_day_labels"] = st.multiselect(
+            "Days of week", DAY_LABELS, default=DAY_LABELS
+        )
     available = get_available_modalities(df) if df is not None else []
     combined = [m for m in available if not is_directional(m)]
     variants = [m for m in available if is_directional(m)]

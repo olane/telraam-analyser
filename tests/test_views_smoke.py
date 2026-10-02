@@ -80,14 +80,6 @@ def test_trends_modality_filter_offers_all():
     assert "All" in boxes["Trend modality"].options
 
 
-def test_compare_modality_defaults_to_car():
-    at = AppTest.from_function(_view_script, default_timeout=30).run()
-    assert not at.exception
-    boxes = {box.label: box for box in at.selectbox}
-    # Compare offers no "All" option, so it should default to cars.
-    assert boxes["Modality"].value == "car"
-
-
 def test_typical_week_groups_follow_the_comparison_axis():
     import pandas as pd
 
@@ -98,7 +90,7 @@ def test_typical_week_groups_follow_the_comparison_axis():
         weekday_hour_matrix,
     )
     from domain.models import ComparisonConfig, ComparisonMode
-    from views.trends import _ordered_groups
+    from ui.components import _ordered_groups
 
     index = pd.date_range("2026-01-05", "2026-01-18 23:00", freq="h", tz="UTC")
     df = pd.DataFrame({"car": 10.0}, index=index)
@@ -107,7 +99,7 @@ def test_typical_week_groups_follow_the_comparison_axis():
         df, ComparisonConfig(mode=ComparisonMode.WEEKDAY_VS_WEEKEND)
     )
 
-    assert _ordered_groups(df) == ["Weekday", "Weekend"]
+    assert _ordered_groups(df, "group_label") == ["Weekday", "Weekend"]
 
     typical = compute_typical_week(df, ["car"], group_col="group_label")
     weekday = weekday_hour_matrix(

@@ -1,4 +1,4 @@
-"""Trends view: long-term trend, weekday-adjusted trend, typical week, speed."""
+"""Trends view: long-term trend, weekday-adjusted trend, speed."""
 
 from __future__ import annotations
 
@@ -9,48 +9,17 @@ from analysis import (
     compute_speed_distribution,
     compute_speed_summary,
     compute_speed_trend,
-    compute_typical_week,
-    dedupe_modalities,
     weekday_adjusted_trend,
-    weekday_hour_matrix,
 )
 from charts import (
     plot_daily_trend,
     plot_speed_distribution,
     plot_speed_trend,
-    plot_typical_week,
     plot_weekday_adjusted_trend,
 )
-from ui.components import csv_download
+from ui.components import ALL_OPTION, csv_download
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
-
-ALL_OPTION = "All"
-GROUP_COL = "group_label"
-
-
-def _modality_frame(df, modalities: list[str], choice: str):
-    """Resolve a modality choice to (frame, column, display name).
-
-    When *choice* is ``"All"`` a combined ``total`` column is added so the
-    single-column aggregations can be reused unchanged. Combined modes whose
-    direction split is also selected are dropped to avoid double counting.
-    """
-    if choice == ALL_OPTION:
-        frame = df.copy()
-        columns = dedupe_modalities(list(modalities))
-        frame["total"] = frame[columns].sum(axis=1)
-        return frame, "total", "all selected modalities"
-    return df, choice, choice
-
-
-def _ordered_groups(df) -> list[str]:
-    """Return the comparison groups present in *df* in their canonical order."""
-    labels = df[GROUP_COL].dropna()
-    if hasattr(labels, "cat"):
-        present = set(labels)
-        return [g for g in labels.cat.categories if g in present]
-    return list(dict.fromkeys(labels))
 
 
 def render() -> None:
@@ -123,35 +92,6 @@ def render() -> None:
         use_container_width=True,
         key="trend_weekday_adjusted",
     )
-
-    assigned = df[df[GROUP_COL].notna()]
-    if assigned.empty:
-        st.info("No data matches the current comparison.")
-        return
-
-    st.subheader("Typical week")
-    st.caption(
-        f"Average week broken down by {controls.comparison.mode.human.lower()} "
-        "— one plot per comparison group."
-    )
-    typical_frame, typical_col, typical_display = _modality_frame(
-        assigned, modalities, trend_choice
-    )
-    typical = compute_typical_week(
-        typical_frame, [typical_col], group_col=GROUP_COL
-    )
-    columns = st.columns(2)
-    for i, group in enumerate(_ordered_groups(assigned)):
-        matrix = weekday_hour_matrix(
-            typical, group, typical_col, group_col=GROUP_COL
-        )
-        columns[i % 2].plotly_chart(
-            plot_typical_week(
-                matrix, title=f"Typical week — {group} — {typical_display}"
-            ),
-            use_container_width=True,
-            key=f"trend_typical_{group}",
-        )
 
     st.subheader("Speed")
     unit = st.radio("Speed unit", ["mph", "km/h"], horizontal=True)

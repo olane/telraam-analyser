@@ -220,13 +220,15 @@ WEEKEND_LABEL = "Weekend"
 BASELINE_LABEL = "Baseline"
 EXCLUDED_LABEL = "Roadworks"
 
-# Ordered day-part bands used by the time-of-day comparison axis.
+# Ordered day-part bands used by the time-of-day comparison axis. The bounds
+# are inclusive whole hours, so each label reads as a clock range with no gaps
+# (e.g. hour 9 is the last hour of the morning school run, not a gap).
 TIME_OF_DAY_BANDS: tuple[tuple[str, int, int], ...] = (
-    ("Night (0–6)", 0, 6),
-    ("Morning school run (7–9)", 7, 9),
-    ("Midday (10–14)", 10, 14),
-    ("Afternoon school run (15–17)", 15, 17),
-    ("Evening (18–23)", 18, 23),
+    ("Night (00:00–06:59)", 0, 6),
+    ("Morning school run (07:00–09:59)", 7, 9),
+    ("Midday (10:00–14:59)", 10, 14),
+    ("Afternoon school run (15:00–17:59)", 15, 17),
+    ("Evening (18:00–23:59)", 18, 23),
 )
 
 

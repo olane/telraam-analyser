@@ -15,6 +15,7 @@ from charts import (
     plot_modal_split,
     plot_weekday_comparison,
 )
+from ui.components import ALL_OPTION, typical_week_heatmaps
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
@@ -50,17 +51,24 @@ def render() -> None:
         daily, modalities, group_col=GROUP_COL
     )
 
-    default_modality = "car" if "car" in modalities else modalities[0]
-    modality = st.selectbox(
-        "Modality",
+    st.subheader("Weekday comparison")
+    columns = st.columns(2)
+    for i, modality in enumerate(modalities):
+        columns[i % 2].plotly_chart(
+            plot_weekday_comparison(
+                weekday_df, modality, group_col=GROUP_COL
+            ),
+            use_container_width=True,
+            key=f"compare_weekday_{modality}",
+        )
+
+    st.divider()
+    typical_week_heatmaps(
+        df,
         modalities,
-        index=modalities.index(default_modality),
-        key="compare_modality",
-    )
-    st.plotly_chart(
-        plot_weekday_comparison(weekday_df, modality, group_col=GROUP_COL),
-        use_container_width=True,
-        key="compare_weekday",
+        ALL_OPTION,
+        controls.comparison,
+        key_prefix="compare_typical",
     )
 
     st.divider()
