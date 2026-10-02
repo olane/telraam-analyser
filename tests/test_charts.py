@@ -22,6 +22,7 @@ from charts import (
     plot_hourly_profile,
     plot_modal_split,
     plot_speed_distribution,
+    plot_speed_trend,
     plot_typical_week,
     plot_weekday_adjusted_trend,
     plot_weekday_comparison,
@@ -70,11 +71,15 @@ def test_all_charts_render(make_df):
     matrix = weekday_hour_matrix(typical, "Christmas", "car")
 
     speed_df = __import__("pandas").DataFrame(
+        {"0-10": [28.0], "10-20": [52.0], "20+": [20.0]}
+    )
+    speed_trend = __import__("pandas").DataFrame(
         {
-            "period_label": ["Christmas", "February half term"],
-            "0-10": [30.0, 25.0],
-            "10-20": [50.0, 55.0],
-            "20+": [20.0, 20.0],
+            "day": __import__("pandas").date_range(
+                "2026-01-01", periods=5, freq="D", tz="UTC"
+            ),
+            "v85": [29.0, 30.0, 29.5, 31.0, 30.5],
+            "rolling": [29.0, 29.5, 29.5, 29.9, 30.0],
         }
     )
 
@@ -84,6 +89,7 @@ def test_all_charts_render(make_df):
     _assert_renders(plot_typical_week(matrix))
     _assert_renders(plot_modal_split(compute_modal_split(df, MODALITIES), MODALITIES))
     _assert_renders(plot_speed_distribution(speed_df))
+    _assert_renders(plot_speed_trend(speed_trend))
     _assert_renders(
         plot_daily_trend(
             compute_daily_trend(df, MODALITIES),

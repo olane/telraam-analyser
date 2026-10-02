@@ -7,6 +7,9 @@ from analysis.aggregates import (
     compute_daily_totals,
     compute_modal_split,
     compute_period_totals,
+    compute_speed_distribution,
+    compute_speed_summary,
+    compute_speed_trend,
     period_mean_daily,
 )
 from analysis.filters import keep_assigned, label_periods
@@ -51,6 +54,31 @@ def test_period_totals_adds_total(make_df):
     row = totals.iloc[0]
     expected = sum(row[m] for m in MODALITIES)
     assert math.isclose(row["total"], expected)
+
+
+def test_speed_summary_and_distribution_are_overall(make_df):
+    df = make_df("2026-02-16", "2026-02-22 23:00", base=10.0)
+    df["v85"] = 30.0
+    df["car_speed_hist_0to120plus"] = [[50.0, 50.0]] * len(df)
+
+    summary = compute_speed_summary(df, unit="mph")
+    assert len(summary) == 1
+    assert "V85 (mph)" in summary.columns
+    assert "Days" in summary.columns
+
+    dist = compute_speed_distribution(df, unit="km/h")
+    assert len(dist) == 1
+    assert math.isclose(dist.iloc[0].sum(), 100.0)
+
+
+def test_speed_trend_is_daily_with_rolling_mean(make_df):
+    df = make_df("2026-02-16", "2026-02-22 23:00")
+    df["v85"] = range(len(df))
+
+    trend = compute_speed_trend(df, unit="km/h", window=3)
+    assert list(trend.columns) == ["day", "v85", "rolling"]
+    assert len(trend) == 7
+    assert trend["rolling"].notna().all()
 
 
 def test_period_mean_daily_ignores_period_length(make_df):

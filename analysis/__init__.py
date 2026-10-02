@@ -7,6 +7,7 @@ from analysis.aggregates import (
     compute_period_totals,
     compute_speed_distribution,
     compute_speed_summary,
+    compute_speed_trend,
     period_mean_daily,
 )
 from analysis.align import (
@@ -62,6 +63,7 @@ __all__ = [
     "compute_period_totals",
     "compute_speed_distribution",
     "compute_speed_summary",
+    "compute_speed_trend",
     "compute_typical_week",
     "compute_weekday_occurrence_totals",
     "compute_weekday_totals",
@@ -80,6 +82,7 @@ __all__ = [
     "latest_year",
     "mark_exclusions",
     "period_mean_daily",
+    "prepare_frame",
     "resolve",
     "rolling_mean",
     "term_status",
