@@ -17,7 +17,7 @@ from charts import (
     plot_speed_trend,
     plot_weekday_adjusted_trend,
 )
-from ui.components import ALL_OPTION, csv_download
+from ui.components import ALL_OPTION, V85_DOCS_URL, csv_download
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
@@ -94,6 +94,10 @@ def render() -> None:
     )
 
     st.subheader("Speed")
+    st.caption(
+        "V85 is the 85th percentile speed — the speed 85% of cars travel at or "
+        f"below. [How Telraam measures V85]({V85_DOCS_URL})."
+    )
     unit = st.radio("Speed unit", ["mph", "km/h"], horizontal=True)
     summary = compute_speed_summary(df, unit=unit)
     if summary is not None and not summary.empty:

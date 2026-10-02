@@ -16,6 +16,7 @@ from domain.models import ComparisonConfig, PeriodInstance, modality_label
 
 LICENSE_URL = "https://creativecommons.org/licenses/by-nc/4.0/"
 TELRAAM_URL = "https://telraam.net/"
+V85_DOCS_URL = "https://faq.telraam.net/en/article/14/speed-measurement-v85-explained"
 
 ALL_OPTION = "All"
 
