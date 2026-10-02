@@ -10,6 +10,7 @@ from analysis import (
     compute_hourly_profile,
     compute_modal_split,
     compute_weekday_totals,
+    period_mean_daily,
 )
 from charts import (
     plot_daily_trend,
@@ -18,7 +19,12 @@ from charts import (
     plot_weekday_comparison,
 )
 from domain.models import ComparisonMode, InterventionFilter
-from ui.components import ALL_OPTION, typical_week_heatmaps
+from ui.components import (
+    ALL_OPTION,
+    format_pct_change,
+    kpi_row,
+    typical_week_heatmaps,
+)
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
@@ -72,6 +78,35 @@ def _intervention_context(controls, modalities: list[str]) -> None:
         )
 
 
+def _headline_comparison(means) -> None:
+    """One KPI card per comparison group: mean daily count vs the baseline."""
+    if means is None or means.empty:
+        return
+
+    baseline_label = means.index[0]
+    baseline = float(means.iloc[0])
+
+    st.subheader("Headline comparison")
+    st.caption(
+        "Mean daily counts per group; deltas are the change against "
+        f"**{baseline_label}**."
+    )
+    kpi_row(
+        [
+            {
+                "label": str(group),
+                "value": f"{value:,.0f}",
+                "delta": (
+                    format_pct_change(baseline, float(value))
+                    if group != baseline_label
+                    else None
+                ),
+            }
+            for group, value in means.items()
+        ]
+    )
+
+
 def render() -> None:
     page_header(
         "Compare",
@@ -98,6 +133,8 @@ def render() -> None:
     if df.empty:
         st.warning("No data matches the current filters or comparison.")
         return
+
+    _headline_comparison(period_mean_daily(df, modalities, group_col=GROUP_COL))
 
     daily = compute_daily_totals(df, modalities, group_col=GROUP_COL)
     weekday_df = compute_weekday_totals(
