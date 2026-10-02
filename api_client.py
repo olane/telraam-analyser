@@ -7,10 +7,20 @@ from datetime import date, timedelta
 import pandas as pd
 import requests
 
-from domain.models import FetchParams
+from domain.models import FetchParams, SegmentInfo
 
 API_BASE = "https://telraam-api.net/v1"
 MAX_CHUNK_DAYS = 90
+
+
+def _parse_iso_date(value: object) -> date | None:
+    """Parse an ISO-8601 timestamp from the API into a UTC date."""
+    if not value:
+        return None
+    try:
+        return pd.Timestamp(value).date()
+    except (TypeError, ValueError):
+        return None
 
 
 class TelraamAPIError(Exception):
@@ -52,6 +62,43 @@ class TelraamClient:
         if not isinstance(report, list):
             raise TelraamAPIError(f"Unexpected report format: {type(report)}")
         return report
+
+    def fetch_segment_info(self, segment_id: str) -> SegmentInfo:
+        """Return a segment's known history window via one metadata request.
+
+        ``/v1/segments/id/{id}`` reports the first and last data packages for a
+        segment, which lets the cache avoid requesting years of empty data
+        before the sensor was ever installed.
+        """
+        self._rate_limit()
+        resp = self._session.get(f"{API_BASE}/segments/id/{segment_id}")
+        self._last_request_time = time.monotonic()
+
+        if resp.status_code != 200:
+            raise TelraamAPIError(
+                f"API returned {resp.status_code}: {resp.text[:500]}"
+            )
+
+        data = resp.json()
+        features = data.get("features") if isinstance(data, dict) else []
+        firsts: list[date] = []
+        lasts: list[date] = []
+        timezone: str | None = None
+        for feature in features:
+            props = feature.get("properties") or {}
+            first = _parse_iso_date(props.get("first_data_package"))
+            last = _parse_iso_date(props.get("last_data_package"))
+            if first:
+                firsts.append(first)
+            if last:
+                lasts.append(last)
+            timezone = timezone or props.get("timezone")
+
+        return SegmentInfo(
+            first_data=min(firsts) if firsts else None,
+            last_data=max(lasts) if lasts else None,
+            timezone=timezone,
+        )
 
     def fetch_traffic(
         self,
