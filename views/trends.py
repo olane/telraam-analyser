@@ -1,4 +1,4 @@
-"""Trends view: long-term trend, weekday-adjusted trend, typical week, speed."""
+"""Trends view: long-term trend, weekday-adjusted trend, speed."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from charts import (
     plot_speed_trend,
     plot_weekday_adjusted_trend,
 )
-from ui.components import ALL_OPTION, csv_download, typical_week_heatmaps
+from ui.components import ALL_OPTION, csv_download
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
@@ -91,14 +91,6 @@ def render() -> None:
         ),
         use_container_width=True,
         key="trend_weekday_adjusted",
-    )
-
-    typical_week_heatmaps(
-        df,
-        modalities,
-        trend_choice,
-        controls.comparison,
-        key_prefix="trend_typical",
     )
 
     st.subheader("Speed")

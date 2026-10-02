@@ -277,22 +277,11 @@ def _term_grouped_assigned():
 
 def render_trends(out_dir: Path, dpi: int):
     trend = compute_daily_trend(FRAME, MODALITIES, window=7)
-    assigned = _term_grouped_assigned()
-    typical = compute_typical_week(
-        assigned, MODALITIES, group_col="group_label"
-    )
-    groups = list(dict.fromkeys(assigned["group_label"].dropna()))
-    matrices = [
-        (group, weekday_hour_matrix(typical, group, "car", group_col="group_label"))
-        for group in groups
-    ]
     speed = compute_speed_distribution(FRAME, unit="mph")
     v85 = compute_speed_trend(FRAME, unit="mph")
 
-    fig = plt.figure(figsize=(12, 15))
-    gs = fig.add_gridspec(
-        3, 2, height_ratios=[1.0, 1.0, 1.0], hspace=0.55, wspace=0.25
-    )
+    fig = plt.figure(figsize=(12, 9))
+    gs = fig.add_gridspec(2, 2, height_ratios=[1.0, 1.0], hspace=0.5, wspace=0.25)
 
     ax1 = fig.add_subplot(gs[0, :])
     ax1.plot(trend["day"], trend["total"], color="#b0bec5", lw=1, label="Daily total")
@@ -306,18 +295,7 @@ def render_trends(out_dir: Path, dpi: int):
     ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
     ax1.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
 
-    for i, (group, matrix) in enumerate(matrices[:2]):
-        ax = fig.add_subplot(gs[1, i])
-        ax.imshow(matrix.values, aspect="auto", cmap="Blues")
-        ax.set_yticks(range(7))
-        ax.set_yticklabels(list(matrix.index))
-        ax.set_xticks(range(0, 24, 3))
-        ax.set_xticklabels(list(range(0, 24, 3)))
-        titled(ax, f"Typical week — {group}, cars")
-        ax.set_xlabel("Hour of day")
-        ax.grid(False)
-
-    ax3 = fig.add_subplot(gs[2, 0])
+    ax3 = fig.add_subplot(gs[1, 0])
     bin_cols = list(speed.columns)
     row = speed.iloc[0]
     ax3.bar(np.arange(len(bin_cols)), [row[c] for c in bin_cols], 0.7,
@@ -327,7 +305,7 @@ def render_trends(out_dir: Path, dpi: int):
     titled(ax3, "Car speed distribution (mph)")
     ax3.set_ylabel("Share (%)")
 
-    ax4 = fig.add_subplot(gs[2, 1])
+    ax4 = fig.add_subplot(gs[1, 1])
     ax4.plot(v85["day"], v85["v85"], color="#b0bec5", lw=1, label="Daily V85")
     ax4.plot(v85["day"], v85["rolling"], color="#c46210", lw=2.4,
              label="7-day average")
