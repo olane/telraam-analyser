@@ -1,9 +1,9 @@
 """Domain model for Telraam traffic comparison.
 
 Typed, calendar-aware periods replace the old flat ``PeriodGroup``: every
-period now has a *kind* (Christmas holiday, half term, term time, ...), an
-optional academic year, and an optional anchor date. This is what makes
-"compare similar periods" and year-on-year comparisons possible.
+period now has a *kind* (Christmas holiday, half term, term time, ...) and an
+optional academic year. This is what makes "compare similar periods" and
+year-on-year comparisons possible.
 """
 
 from __future__ import annotations
@@ -43,10 +43,6 @@ class PeriodKind(str, Enum):
     @property
     def is_term(self) -> bool:
         return self is PeriodKind.TERM
-
-    @property
-    def is_intervention(self) -> bool:
-        return self in (PeriodKind.INTERVENTION_BEFORE, PeriodKind.INTERVENTION_AFTER)
 
 
 _KIND_LABELS: dict[PeriodKind, str] = {
@@ -89,7 +85,6 @@ class PeriodInstance:
     kind: PeriodKind
     ranges: tuple[DateRange, ...] = ()
     academic_year: str | None = None
-    anchor: date | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(

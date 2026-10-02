@@ -5,7 +5,6 @@ from datetime import date
 import pandas as pd
 
 from analysis.filters import (
-    add_weekday_occurrence,
     filter_days_of_week,
     filter_time_of_day,
     keep_assigned,
@@ -50,13 +49,3 @@ def test_time_and_day_filters(make_df):
 
     weekdays = filter_days_of_week(df, [0, 1, 2, 3, 4])
     assert set(weekdays["weekday"].unique()) <= {0, 1, 2, 3, 4}
-
-
-def test_weekday_occurrence_counts_second_monday(make_df):
-    df = make_df("2025-12-22", "2026-01-02 23:00")
-    labelled = label_periods(df, [_christmas()])
-    with_occurrence = add_weekday_occurrence(labelled)
-
-    mondays = with_occurrence[with_occurrence["weekday"] == 0]
-    occurrences = sorted(mondays["weekday_occurrence"].unique())
-    assert occurrences == [1, 2]

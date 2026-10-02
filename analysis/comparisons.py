@@ -73,13 +73,11 @@ def build_before_after(
             label="Before intervention",
             kind=PeriodKind.INTERVENTION_BEFORE,
             ranges=((before_start, before_end),),
-            anchor=cutover,
         ),
         PeriodInstance(
             label="After intervention",
             kind=PeriodKind.INTERVENTION_AFTER,
             ranges=((after_start, after_end),),
-            anchor=cutover,
         ),
     ]
 
@@ -93,7 +91,6 @@ def build_before_after(
                     (before_start - shift, before_end - shift),
                     (after_start - shift, after_end - shift),
                 ),
-                anchor=cutover,
             )
         )
     return instances

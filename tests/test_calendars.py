@@ -19,11 +19,10 @@ def test_labels_are_unique():
     assert len(labels) == len(set(labels))
 
 
-def test_christmas_dates_and_anchor():
+def test_christmas_dates():
     christmas = default_calendar().of_kind(PeriodKind.CHRISTMAS)[0]
     assert christmas.start == date(2025, 12, 22)
     assert christmas.end == date(2026, 1, 2)
-    assert christmas.anchor == date(2025, 12, 25)
     assert christmas.n_days == 12
 
 

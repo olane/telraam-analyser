@@ -150,17 +150,3 @@ def keep_assigned(df: pd.DataFrame) -> pd.DataFrame:
     if "period_label" not in df.columns:
         raise KeyError("label_periods() must be called before keep_assigned()")
     return df[df["period_label"].notna()].copy()
-
-
-def add_weekday_occurrence(df: pd.DataFrame) -> pd.DataFrame:
-    """Add ``weekday_occurrence`` (1st/2nd/... Monday within each period)."""
-    if "period_label" not in df.columns:
-        raise KeyError("label_periods() must be called first")
-    df = df.copy()
-    day_weekday = df[["period_label", "day", "weekday"]].drop_duplicates()
-    day_weekday["weekday_occurrence"] = (
-        day_weekday.groupby(["period_label", "weekday"]).cumcount() + 1
-    )
-    return df.merge(
-        day_weekday, on=["period_label", "day", "weekday"], how="left"
-    )

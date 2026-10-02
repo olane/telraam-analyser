@@ -11,7 +11,6 @@ https://www.cambridgeshire.gov.uk/residents/children-and-families/schools-learni
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from datetime import date
 
 from domain.models import Calendar, PeriodInstance, PeriodKind
@@ -62,19 +61,6 @@ CAMBRIDGE_YEARS: dict[str, dict] = {
     },
 }
 
-# Anchors used by anchor-relative alignment, where the exact date matters.
-HOLIDAY_ANCHORS: dict[PeriodKind, Callable[[date, date], date]] = {
-    PeriodKind.CHRISTMAS: lambda start, end: date(start.year, 12, 25),
-}
-
-
-def _anchor_for(kind: PeriodKind, start: date, end: date) -> date:
-    builder = HOLIDAY_ANCHORS.get(kind)
-    if builder is not None:
-        return builder(start, end)
-    return start
-
-
 def build_cambridge_calendar(years: list[str] | None = None) -> Calendar:
     """Build the Cambridge calendar for the requested academic years.
 
@@ -95,7 +81,6 @@ def build_cambridge_calendar(years: list[str] | None = None) -> Calendar:
                     kind=PeriodKind.TERM,
                     ranges=((start, end),),
                     academic_year=academic_year,
-                    anchor=start,
                 )
             )
 
@@ -106,7 +91,6 @@ def build_cambridge_calendar(years: list[str] | None = None) -> Calendar:
                     kind=kind,
                     ranges=((start, end),),
                     academic_year=academic_year,
-                    anchor=_anchor_for(kind, start, end),
                 )
             )
 
