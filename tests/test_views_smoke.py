@@ -73,6 +73,17 @@ def test_overview_renders_kpis():
     assert any(metric.delta for metric in at.metric)
 
 
+def test_compare_renders_headline_kpis_for_every_group():
+    at = AppTest.from_function(_view_script, default_timeout=30).run()
+    assert not at.exception
+    metrics = {metric.label: metric for metric in at.metric}
+    # One card per comparison group, not just the first two.
+    assert "Term time" in metrics
+    assert "School holidays" in metrics
+    # Non-baseline cards carry the percentage change.
+    assert metrics["School holidays"].delta
+
+
 def test_trends_modality_filter_offers_all():
     at = AppTest.from_function(_view_script, default_timeout=30).run()
     assert not at.exception

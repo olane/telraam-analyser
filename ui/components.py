@@ -20,6 +20,13 @@ TELRAAM_URL = "https://telraam.net/"
 ALL_OPTION = "All"
 
 
+def format_pct_change(before: float, after: float) -> str | None:
+    """Signed percentage change from *before* to *after*, or None if undefined."""
+    if not before:
+        return None
+    return f"{(after - before) / before * 100:+.1f}%"
+
+
 def kpi_row(items: list[dict]) -> None:
     """Render a row of KPI metrics. Each item: {label, value, delta?, help?}."""
     if not items:

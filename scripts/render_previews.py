@@ -206,6 +206,28 @@ def save(fig, out_dir: Path, name: str, dpi: int):
     print("wrote", path)
 
 
+def kpi_cards(ax, kpis):
+    """Draw Streamlit-style metric cards. Each kpi: (label, value, delta?)."""
+    ax.axis("off")
+    width = min(0.22, 0.96 / max(len(kpis), 1) - 0.02)
+    bottom, top = 0.05, 0.85
+    for i, (label, value, delta) in enumerate(kpis):
+        x = 0.02 + i * 0.24
+        ax.add_patch(
+            plt.Rectangle((x, bottom), width, top - bottom,
+                          transform=ax.transAxes, facecolor="#f7fafc",
+                          edgecolor="#e3e8ee")
+        )
+        ax.text(x + 0.02, top - 0.2, label, transform=ax.transAxes,
+                fontsize=9, color="#607d8b")
+        ax.text(x + 0.02, top - 0.42, value, transform=ax.transAxes,
+                fontsize=15, color="#0b6e99", fontweight="bold")
+        if delta:
+            colour = "#2e7d32" if delta.startswith("+") else "#c62828"
+            ax.text(x + 0.02, top - 0.62, delta, transform=ax.transAxes,
+                    fontsize=10, color=colour)
+
+
 def styled_table(ax, rows, bbox, col_widths):
     table = ax.table(
         cellText=rows, loc="upper left", bbox=bbox,
@@ -333,14 +355,33 @@ def render_compare(out_dir: Path, dpi: int):
         combined, ["total"], group_col="group_label"
     )
     groups = list(dict.fromkeys(assigned["group_label"].dropna()))
+    means = period_mean_daily(assigned, MODALITIES, group_col="group_label")
 
-    fig = plt.figure(figsize=(12, 16))
-    gs = fig.add_gridspec(4, 2, hspace=0.5, wspace=0.25)
+    fig = plt.figure(figsize=(12, 17))
+    gs = fig.add_gridspec(
+        5, 2, hspace=0.6, wspace=0.25, height_ratios=[0.42, 1, 1, 1, 1]
+    )
+
+    # Headline comparison: one card per group, deltas against the baseline.
+    ax_kpi = fig.add_subplot(gs[0, :])
+    titled(ax_kpi, "Headline comparison")
+    baseline = float(means.iloc[0])
+    kpi_cards(
+        ax_kpi,
+        [
+            (
+                group,
+                f"{value:,.0f}",
+                f"{(value - baseline) / baseline * 100:+.1f}%" if i else None,
+            )
+            for i, (group, value) in enumerate(means.items())
+        ],
+    )
 
     # Weekday comparison: one panel per modality selected in the sidebar.
     x = np.arange(7)
     for i, modality in enumerate(MODALITIES):
-        ax = fig.add_subplot(gs[i // 2, i % 2])
+        ax = fig.add_subplot(gs[i // 2 + 1, i % 2])
         for j, group in enumerate(groups):
             subset = weekday_df[
                 weekday_df["group_label"] == group
@@ -354,7 +395,7 @@ def render_compare(out_dir: Path, dpi: int):
         ax.legend(frameon=False)
 
     for i, group in enumerate(groups[:2]):
-        ax = fig.add_subplot(gs[2, i])
+        ax = fig.add_subplot(gs[3, i])
         matrix = weekday_hour_matrix(
             typical, group, "total", group_col="group_label"
         )
@@ -367,7 +408,7 @@ def render_compare(out_dir: Path, dpi: int):
         ax.set_xlabel("Hour of day")
         ax.grid(False)
 
-    ax3 = fig.add_subplot(gs[3, 0])
+    ax3 = fig.add_subplot(gs[4, 0])
     xm = np.arange(len(MODALITIES))
     for i, group in enumerate(groups):
         row = split[split["group_label"] == group].iloc[0]
@@ -378,7 +419,7 @@ def render_compare(out_dir: Path, dpi: int):
     titled(ax3, "Modal split (%)")
     ax3.legend(frameon=False)
 
-    ax4 = fig.add_subplot(gs[3, 1])
+    ax4 = fig.add_subplot(gs[4, 1])
     for i, group in enumerate(groups):
         subset = profile[profile["group_label"] == group].sort_values("hour")
         ax4.plot(subset.hour, subset.bike, marker="o", ms=3, label=group,

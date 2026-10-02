@@ -9,7 +9,7 @@ from analysis import (
     compute_period_totals,
     period_mean_daily,
 )
-from ui.components import kpi_row, period_summary
+from ui.components import format_pct_change, kpi_row, period_summary
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
@@ -21,12 +21,6 @@ def _mean_daily(df: pd.DataFrame, modalities: list[str]) -> float | None:
     if daily.empty:
         return None
     return float(daily.sum(axis=1).mean())
-
-
-def _pct_delta(before: float, after: float) -> str | None:
-    if not before:
-        return None
-    return f"{(after - before) / before * 100:+.1f}%"
 
 
 def render() -> None:
@@ -84,7 +78,7 @@ def render() -> None:
             {
                 "label": f"{second_label} vs {first_label}",
                 "value": f"{per_period_daily[second_label]:,.0f}",
-                "delta": _pct_delta(
+                "delta": format_pct_change(
                     per_period_daily[first_label],
                     per_period_daily[second_label],
                 ),
