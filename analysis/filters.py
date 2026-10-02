@@ -89,17 +89,43 @@ def filter_days_of_week(df: pd.DataFrame, days: list[int]) -> pd.DataFrame:
     return df[df["weekday"].isin(days)]
 
 
+def _exclusion_mask(
+    index: pd.DatetimeIndex, exclusions: list[Exclusion]
+) -> pd.Series:
+    mask = pd.Series(False, index=index)
+    for exclusion in exclusions:
+        if exclusion.ranges:
+            mask |= _range_mask(index, exclusion.ranges)
+    return mask
+
+
+def mark_exclusions(
+    df: pd.DataFrame, exclusions: list[Exclusion]
+) -> pd.DataFrame:
+    """Flag excluded rows without dropping them.
+
+    The roadworks comparison axis needs to keep excluded rows so it can bucket
+    them against the baseline; every other axis drops them via
+    :func:`drop_exclusions`.
+    """
+    df = df.copy()
+    df["is_excluded"] = (
+        _exclusion_mask(df.index, exclusions)
+        if exclusions
+        else False
+    )
+    return df
+
+
 def drop_exclusions(
     df: pd.DataFrame, exclusions: list[Exclusion]
 ) -> pd.DataFrame:
     """Remove any excluded date ranges (roadworks, closures, ...)."""
     if not exclusions:
         return df
-    mask = pd.Series(False, index=df.index)
-    for exclusion in exclusions:
-        if exclusion.ranges:
-            mask |= _range_mask(df.index, exclusion.ranges)
-    return df[~mask]
+    if "is_excluded" in df.columns:
+        return df[~df["is_excluded"].astype(bool)]
+    return df[~_exclusion_mask(df.index, exclusions)]
 
 
 # ---------------------------------------------------------------------------

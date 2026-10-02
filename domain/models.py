@@ -27,6 +27,7 @@ class PeriodKind(str, Enum):
     EASTER = "easter"
     MAY_HALF = "may_half_term"
     SUMMER = "summer"
+    HOLIDAY = "holiday"
     CUSTOM = "custom"
     INTERVENTION_BEFORE = "intervention_before"
     INTERVENTION_AFTER = "intervention_after"
@@ -56,6 +57,7 @@ _KIND_LABELS: dict[PeriodKind, str] = {
     PeriodKind.EASTER: "Easter holiday",
     PeriodKind.MAY_HALF: "May half term",
     PeriodKind.SUMMER: "Summer holiday",
+    PeriodKind.HOLIDAY: "School holidays",
     PeriodKind.CUSTOM: "Custom period",
     PeriodKind.INTERVENTION_BEFORE: "Before intervention",
     PeriodKind.INTERVENTION_AFTER: "After intervention",
@@ -68,6 +70,7 @@ HOLIDAY_KINDS: tuple[PeriodKind, ...] = (
     PeriodKind.EASTER,
     PeriodKind.MAY_HALF,
     PeriodKind.SUMMER,
+    PeriodKind.HOLIDAY,
 )
 
 # Order in which school holidays occur within an academic year.
@@ -166,28 +169,32 @@ class Calendar:
 
 
 class ComparisonMode(str, Enum):
-    """Recipes that turn a calendar into the set of periods to analyse.
+    """What the comparison charts group by.
 
-    A recipe only decides *which periods* are labelled; it no longer decides
-    what gets downloaded (that is the sidebar's time range).
+    A recipe also decides which calendar periods are marked on trend charts,
+    but the *axis* is what matters: instead of one bucket per holiday, rows are
+    grouped into a small set of meaningful buckets (term vs holiday, before vs
+    after, weekday vs weekend, ...).
     """
 
-    ALL = "all"
     HOLIDAY_VS_TERM = "holiday_vs_term"
     YEAR_ON_YEAR = "year_on_year"
-    BY_KIND = "by_kind"
     BEFORE_AFTER = "before_after"
+    WEEKDAY_VS_WEEKEND = "weekday_vs_weekend"
+    TIME_OF_DAY = "time_of_day"
+    ROADWORKS = "roadworks"
     CUSTOM = "custom"
 
     @property
     def human(self) -> str:
         return {
-            ComparisonMode.ALL: "All calendar periods",
-            ComparisonMode.HOLIDAY_VS_TERM: "Holidays vs term time",
-            ComparisonMode.YEAR_ON_YEAR: "Year on year (same holiday)",
-            ComparisonMode.BY_KIND: "Compare holiday types",
+            ComparisonMode.HOLIDAY_VS_TERM: "Term time vs holidays",
+            ComparisonMode.YEAR_ON_YEAR: "Same period, previous year",
             ComparisonMode.BEFORE_AFTER: "Before / after an intervention",
-            ComparisonMode.CUSTOM: "Custom selection",
+            ComparisonMode.WEEKDAY_VS_WEEKEND: "Weekday vs weekend",
+            ComparisonMode.TIME_OF_DAY: "Time of day",
+            ComparisonMode.ROADWORKS: "Roadworks vs baseline",
+            ComparisonMode.CUSTOM: "Custom periods",
         }[self]
 
 
@@ -195,14 +202,40 @@ class ComparisonMode(str, Enum):
 class ComparisonConfig:
     """User-chosen comparison recipe plus its parameters."""
 
-    mode: ComparisonMode = ComparisonMode.ALL
+    mode: ComparisonMode = ComparisonMode.HOLIDAY_VS_TERM
     period_labels: list[str] = field(default_factory=list)
     kind: PeriodKind | None = None
-    kinds: list[PeriodKind] = field(default_factory=list)
     years: list[str] = field(default_factory=list)
     cutover: date | None = None
     window_days: int = 56
     include_previous_year: bool = False
+
+
+# Group labels shared by the comparison axes and their charts.
+TERM_LABEL = "Term time"
+NOT_TERM_LABEL = "Not term time"
+HOLIDAY_LABEL = "School holidays"
+WEEKDAY_LABEL = "Weekday"
+WEEKEND_LABEL = "Weekend"
+BASELINE_LABEL = "Baseline"
+EXCLUDED_LABEL = "Roadworks"
+
+# Ordered day-part bands used by the time-of-day comparison axis.
+TIME_OF_DAY_BANDS: tuple[tuple[str, int, int], ...] = (
+    ("Night (0–6)", 0, 6),
+    ("Morning school run (7–9)", 7, 9),
+    ("Midday (10–14)", 10, 14),
+    ("Afternoon school run (15–17)", 15, 17),
+    ("Evening (18–23)", 18, 23),
+)
+
+
+def time_of_day_band(hour: int) -> str:
+    """Return the ordered time-of-day band label for *hour*."""
+    for label, start, end in TIME_OF_DAY_BANDS:
+        if start <= hour <= end:
+            return label
+    return TIME_OF_DAY_BANDS[-1][0]
 
 
 @dataclass

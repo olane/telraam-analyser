@@ -142,6 +142,21 @@ def test_weekday_comparison_has_one_trace_per_period(make_df):
         assert len(trace.y) == 7
 
 
+def test_weekday_comparison_groups_by_comparison_axis(make_df):
+    df = _labelled(make_df)
+    daily = compute_daily_totals(df, MODALITIES)
+    weekday_df = compute_weekday_totals(daily, MODALITIES)
+    weekday_df["group_label"] = [
+        "Term time" if i % 2 else "School holidays"
+        for i in range(len(weekday_df))
+    ]
+
+    fig = plot_weekday_comparison(weekday_df, "car", group_col="group_label")
+
+    assert len(fig.data) == 2
+    assert {trace.name for trace in fig.data} == {"Term time", "School holidays"}
+
+
 def test_hourly_profile_has_period_x_modality_traces(make_df):
     df = _labelled(make_df)
     profile = compute_hourly_profile(df, MODALITIES)

@@ -19,7 +19,6 @@ from analysis.align import (
 from analysis.comparisons import (
     aggregate,
     build_before_after,
-    by_kind,
     describe_instances,
     holiday_vs_term,
     latest_year,
@@ -38,7 +37,9 @@ from analysis.filters import (
     keep_assigned,
     keep_labels,
     label_periods,
+    mark_exclusions,
 )
+from analysis.grouping import add_comparison_group, term_status
 from analysis.trends import (
     compute_daily_trend,
     daily_total_series,
@@ -48,11 +49,11 @@ from analysis.trends import (
 
 __all__ = [
     "WEEKDAY_LABELS",
+    "add_comparison_group",
     "add_time_columns",
     "add_weekday_occurrence",
     "aggregate",
     "build_before_after",
-    "by_kind",
     "compute_daily_totals",
     "compute_daily_trend",
     "compute_hourly_profile",
@@ -76,9 +77,11 @@ __all__ = [
     "keep_labels",
     "label_periods",
     "latest_year",
+    "mark_exclusions",
     "period_mean_daily",
     "resolve",
     "rolling_mean",
+    "term_status",
     "weekday_adjusted_trend",
     "weekday_hour_matrix",
     "year_on_year",

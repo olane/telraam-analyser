@@ -15,15 +15,16 @@ def plot_hourly_profile(
     profile_df: pd.DataFrame,
     modalities: list[str],
     height: int = 440,
+    group_col: str = "period_label",
 ) -> go.Figure:
-    """Line chart: hour on x-axis, one trace per (period, modality)."""
+    """Line chart: hour on x-axis, one trace per (group, modality)."""
     if profile_df is None or profile_df.empty:
         from charts.theme import empty_figure
 
         return empty_figure()
 
     fig = go.Figure()
-    groups = list(dict.fromkeys(profile_df["period_label"]))
+    groups = list(dict.fromkeys(profile_df[group_col]))
     period_colours = period_colour_map(groups)
     single_group = len(groups) == 1
 
@@ -31,7 +32,7 @@ def plot_hourly_profile(
         dash = _DASH_STYLES[mi % len(_DASH_STYLES)]
         marker = _MARKER_SYMBOLS[mi % len(_MARKER_SYMBOLS)]
         for group in groups:
-            subset = profile_df[profile_df["period_label"] == group]
+            subset = profile_df[profile_df[group_col] == group]
             colour = (
                 modality_colour(modality) if single_group else period_colours[group]
             )

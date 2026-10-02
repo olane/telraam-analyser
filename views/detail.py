@@ -58,13 +58,13 @@ def render() -> None:
         st.info("No speed data is available for this segment or selection.")
 
     st.divider()
-    st.subheader("Totals by period")
-    totals = compute_period_totals(df, modalities)
+    st.subheader("Totals by group")
+    totals = compute_period_totals(df, modalities, group_col="group_label")
     st.dataframe(totals, use_container_width=True, hide_index=True)
     csv_download(totals, "period_totals.csv", "Download totals (CSV)")
 
     st.subheader("Modal split (%)")
-    split = compute_modal_split(df, modalities)
+    split = compute_modal_split(df, modalities, group_col="group_label")
     st.dataframe(split, use_container_width=True, hide_index=True)
     csv_download(split, "modal_split.csv", "Download modal split (CSV)")
 

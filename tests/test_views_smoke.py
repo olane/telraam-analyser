@@ -34,6 +34,10 @@ def _view_script() -> None:
             ((date(2025, 12, 22), date(2026, 1, 2)),),
         ),
         PeriodInstance(
+            "Spring term", PeriodKind.TERM,
+            ((date(2026, 1, 5), date(2026, 1, 30)),),
+        ),
+        PeriodInstance(
             "February half term", PeriodKind.FEB_HALF,
             ((date(2026, 2, 16), date(2026, 2, 22)),),
         ),
@@ -62,7 +66,7 @@ def test_overview_renders_kpis():
     at = AppTest.from_function(_view_script, default_timeout=30).run()
     assert not at.exception
     labels = {metric.label for metric in at.metric}
-    assert "Periods" in labels
+    assert "Groups" in labels
     assert "Mean daily count" in labels
     assert len(at.metric) >= 4
     # The period comparison KPI carries a percentage delta.

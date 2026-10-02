@@ -6,7 +6,6 @@ import pandas as pd
 import streamlit as st
 
 from analysis import (
-    compute_daily_totals,
     compute_period_totals,
     period_mean_daily,
 )
@@ -18,11 +17,10 @@ from ui.theme import page_header
 def _mean_daily(df: pd.DataFrame, modalities: list[str]) -> float | None:
     if df.empty or not modalities:
         return None
-    daily = compute_daily_totals(df, modalities)
+    daily = df.groupby("day")[modalities].sum()
     if daily.empty:
         return None
-    totals = daily[modalities].sum(axis=1)
-    return float(totals.mean())
+    return float(daily.sum(axis=1).mean())
 
 
 def _pct_delta(before: float, after: float) -> str | None:
@@ -46,7 +44,7 @@ def render() -> None:
         return
 
     df = prepared_df()
-    assigned = df[df["period_label"].notna()]
+    assigned = df[df["group_label"].notna()]
     modalities = controls.filters.selected_modalities
 
     if not modalities:
@@ -54,7 +52,7 @@ def render() -> None:
         return
 
     totals = (
-        compute_period_totals(assigned, modalities)
+        compute_period_totals(assigned, modalities, group_col="group_label")
         if not assigned.empty
         else pd.DataFrame()
     )
@@ -62,15 +60,15 @@ def render() -> None:
     # Compare mean daily counts, not raw totals: period lengths differ a lot
     # (a one-week half term vs a six-week term), so totals are misleading.
     per_period_daily = (
-        period_mean_daily(assigned, modalities)
+        period_mean_daily(assigned, modalities, group_col="group_label")
         if not assigned.empty
         else pd.Series(dtype=float)
     )
 
-    present = set(assigned["period_label"].dropna().unique())
+    present = set(assigned["group_label"].dropna().unique())
     items: list[dict] = [
         {"label": "Hourly rows", "value": f"{len(controls.df):,}"},
-        {"label": "Periods", "value": str(len(present))},
+        {"label": "Groups", "value": str(len(present))},
     ]
 
     mean_daily = _mean_daily(assigned, modalities)
@@ -96,9 +94,13 @@ def render() -> None:
 
     kpi_row(items)
 
-    st.subheader("Selected periods")
-    shown = [i for i in controls.instances if i.label in present] or controls.instances
-    period_summary(shown, caption="These are the periods being compared.")
+    marked = set(df["period_label"].dropna().unique())
+    shown = [i for i in controls.instances if i.label in marked]
+    if shown:
+        st.subheader("Marked periods")
+        period_summary(
+            shown, caption="Periods marked on the trend charts."
+        )
 
     if controls.exclusions:
         st.subheader("Excluded ranges")
@@ -117,7 +119,7 @@ def render() -> None:
         )
 
     if not totals.empty:
-        st.subheader("Totals by period")
+        st.subheader("Totals by group")
         st.dataframe(totals, use_container_width=True, hide_index=True)
 
     st.caption(

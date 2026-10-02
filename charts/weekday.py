@@ -14,19 +14,20 @@ def plot_weekday_comparison(
     modality: str,
     value_label: str = "Mean daily count",
     height: int = 400,
+    group_col: str = "period_label",
 ) -> go.Figure:
-    """Grouped bars: one bar per period for each weekday."""
+    """Grouped bars: one bar per comparison group for each weekday."""
     if weekday_df is None or weekday_df.empty:
         from charts.theme import empty_figure
 
         return empty_figure()
 
-    groups = list(dict.fromkeys(weekday_df["period_label"]))
+    groups = list(dict.fromkeys(weekday_df[group_col]))
     colours = period_colour_map(groups)
 
     fig = go.Figure()
     for group in groups:
-        subset = weekday_df[weekday_df["period_label"] == group]
+        subset = weekday_df[weekday_df[group_col] == group]
         values = (
             subset.set_index("weekday")[modality].reindex(range(7)).tolist()
         )
@@ -54,8 +55,9 @@ def plot_weekday_occurrence(
     occurrence_df: pd.DataFrame,
     modality: str,
     height: int = 400,
+    group_col: str = "period_label",
 ) -> go.Figure:
-    """Lines: mean value by nth occurrence of each weekday within a period.
+    """Lines: mean value by nth occurrence of each weekday within a group.
 
     Useful for long holidays where weekday alignment alone hides week 1 vs
     week 2 differences.
@@ -65,12 +67,12 @@ def plot_weekday_occurrence(
 
         return empty_figure()
 
-    groups = list(dict.fromkeys(occurrence_df["period_label"]))
+    groups = list(dict.fromkeys(occurrence_df[group_col]))
     colours = period_colour_map(groups)
 
     fig = go.Figure()
     for group in groups:
-        subset = occurrence_df[occurrence_df["period_label"] == group]
+        subset = occurrence_df[occurrence_df[group_col] == group]
         for weekday, label in enumerate(WEEKDAY_LABELS):
             days = subset[subset["weekday"] == weekday].sort_values(
                 "weekday_occurrence"

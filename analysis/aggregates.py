@@ -13,60 +13,60 @@ from analysis.filters import get_speed_hist_columns
 # ---------------------------------------------------------------------------
 
 def compute_hourly_profile(
-    df: pd.DataFrame, modalities: list[str]
+    df: pd.DataFrame, modalities: list[str], group_col: str = "period_label"
 ) -> pd.DataFrame:
-    """Mean value per (period, hour of day) for each modality."""
+    """Mean value per (group, hour of day) for each modality."""
     return (
-        df.groupby(["period_label", "period_kind", "hour"])[modalities]
+        df.groupby([group_col, "hour"], observed=True)[modalities]
         .mean()
         .reset_index()
     )
 
 
 def compute_daily_totals(
-    df: pd.DataFrame, modalities: list[str]
+    df: pd.DataFrame, modalities: list[str], group_col: str = "period_label"
 ) -> pd.DataFrame:
-    """Sum per (period, day) for each modality."""
+    """Sum per (group, day) for each modality."""
     return (
-        df.groupby(["period_label", "day"])[modalities]
+        df.groupby([group_col, "day"], observed=True)[modalities]
         .sum()
         .reset_index()
     )
 
 
 def compute_modal_split(
-    df: pd.DataFrame, modalities: list[str]
+    df: pd.DataFrame, modalities: list[str], group_col: str = "period_label"
 ) -> pd.DataFrame:
-    """Percentage share of each modality per period."""
-    totals = df.groupby("period_label")[modalities].sum()
+    """Percentage share of each modality per comparison group."""
+    totals = df.groupby(group_col, observed=True)[modalities].sum()
     row_sums = totals.sum(axis=1)
     percentages = totals.div(row_sums, axis=0) * 100
     return percentages.reset_index()
 
 
 def compute_period_totals(
-    df: pd.DataFrame, modalities: list[str]
+    df: pd.DataFrame, modalities: list[str], group_col: str = "period_label"
 ) -> pd.DataFrame:
-    """Total counts per period per modality, plus a combined total."""
-    totals = df.groupby("period_label")[modalities].sum().reset_index()
+    """Total counts per group per modality, plus a combined total."""
+    totals = df.groupby(group_col, observed=True)[modalities].sum().reset_index()
     totals["total"] = totals[modalities].sum(axis=1)
     return totals
 
 
 def period_mean_daily(
-    df: pd.DataFrame, modalities: list[str]
+    df: pd.DataFrame, modalities: list[str], group_col: str = "period_label"
 ) -> pd.Series:
-    """Mean daily count per period, indexed by period label.
+    """Mean daily count per group, indexed by the group label.
 
     Use this — not raw totals — to compare periods of different lengths
     (a one-week half term vs a six-week term), otherwise shorter periods
     always appear smaller.
     """
-    daily = compute_daily_totals(df, modalities)
+    daily = compute_daily_totals(df, modalities, group_col=group_col)
     if daily.empty:
         return pd.Series(dtype=float, name="mean_daily")
     daily = daily.assign(total=daily[modalities].sum(axis=1))
-    return daily.groupby("period_label")["total"].mean().rename("mean_daily")
+    return daily.groupby(group_col, observed=True)["total"].mean().rename("mean_daily")
 
 
 # ---------------------------------------------------------------------------

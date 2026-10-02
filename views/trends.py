@@ -10,6 +10,7 @@ from analysis import (
     compute_typical_week,
     compute_weekday_totals,
     dedupe_modalities,
+    term_status,
     weekday_adjusted_trend,
     weekday_hour_matrix,
 )
@@ -19,17 +20,20 @@ from charts import (
     plot_weekday_adjusted_trend,
     plot_weekday_comparison,
 )
+from domain.models import NOT_TERM_LABEL, TERM_LABEL
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
 ALL_OPTION = "All"
+GROUP_COL = "group_label"
 
 
 def _modality_frame(df, modalities: list[str], choice: str):
     """Resolve a modality choice to (frame, column, display name).
 
     When *choice* is ``"All"`` a combined ``total`` column is added so the
-    single-column aggregations can be reused unchanged.
+    single-column aggregations can be reused unchanged. Combined modes whose
+    direction split is also selected are dropped to avoid double counting.
     """
     if choice == ALL_OPTION:
         frame = df.copy()
@@ -110,9 +114,9 @@ def render() -> None:
         key="trend_weekday_adjusted",
     )
 
-    assigned = df[df["period_label"].notna()]
+    assigned = df[df[GROUP_COL].notna()]
     if assigned.empty:
-        st.info("No labelled periods are covered by the loaded data.")
+        st.info("No data matches the current comparison.")
         return
 
     st.subheader("Weekday comparison")
@@ -126,26 +130,41 @@ def render() -> None:
     daily_frame, daily_col, daily_display = _modality_frame(
         assigned, modalities, comparison_choice
     )
-    daily = compute_daily_totals(daily_frame, [daily_col])
-    weekday_df = compute_weekday_totals(daily, [daily_col])
+    daily = compute_daily_totals(
+        daily_frame, [daily_col], group_col=GROUP_COL
+    )
+    weekday_df = compute_weekday_totals(
+        daily, [daily_col], group_col=GROUP_COL
+    )
     st.plotly_chart(
-        plot_weekday_comparison(weekday_df, daily_col),
+        plot_weekday_comparison(
+            weekday_df, daily_col, group_col=GROUP_COL
+        ),
         use_container_width=True,
         key="trend_weekday_comparison",
     )
 
     st.subheader("Typical week")
-    labels = list(dict.fromkeys(assigned["period_label"]))
-    chosen = st.selectbox("Period", labels, key="trend_typical_period")
+    st.caption(
+        "Term time versus not term time — average week, all matching days "
+        "rolled together."
+    )
     typical_frame, typical_col, typical_display = _modality_frame(
-        assigned[assigned["period_label"] == chosen], modalities, comparison_choice
+        df, modalities, comparison_choice
     )
-    typical = compute_typical_week(typical_frame, [typical_col])
-    matrix = weekday_hour_matrix(typical, chosen, typical_col)
-    st.plotly_chart(
-        plot_typical_week(
-            matrix, title=f"Typical week — {chosen} — {typical_display}"
-        ),
-        use_container_width=True,
-        key="trend_typical_week",
+    typical_frame["term_group"] = term_status(typical_frame)
+    typical = compute_typical_week(
+        typical_frame, [typical_col], group_col="term_group"
     )
+    left, right = st.columns(2)
+    for column, status in ((left, TERM_LABEL), (right, NOT_TERM_LABEL)):
+        matrix = weekday_hour_matrix(
+            typical, status, typical_col, group_col="term_group"
+        )
+        column.plotly_chart(
+            plot_typical_week(
+                matrix, title=f"Typical week — {status} — {typical_display}"
+            ),
+            use_container_width=True,
+            key=f"trend_typical_{status}",
+        )
