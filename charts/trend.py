@@ -77,6 +77,19 @@ def _add_bands(
             annotated.add(exclusion.label)
 
 
+def _clip_x_range(fig: go.Figure, trend_df: pd.DataFrame) -> None:
+    """Keep the x-axis to the loaded data.
+
+    Period bands and exclusions are drawn as shapes in data coordinates, and
+    Plotly's autorange includes shape coordinates. A future academic year added
+    to the calendar would otherwise stretch the axis into blank space beyond the
+    data, so clamp the range to the actual days plotted.
+    """
+    days = pd.to_datetime(trend_df["day"])
+    if not days.empty:
+        fig.update_xaxes(range=[days.min(), days.max()])
+
+
 def plot_daily_trend(
     trend_df: pd.DataFrame,
     instances: list[PeriodInstance] | None = None,
@@ -111,6 +124,7 @@ def plot_daily_trend(
     )
 
     _add_bands(fig, instances, exclusions)
+    _clip_x_range(fig, trend_df)
 
     fig.update_layout(
         title=title,
@@ -156,6 +170,7 @@ def plot_weekday_adjusted_trend(
     )
 
     _add_bands(fig, instances, exclusions)
+    _clip_x_range(fig, trend_df)
 
     fig.update_layout(
         title=title,

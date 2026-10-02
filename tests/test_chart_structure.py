@@ -107,6 +107,25 @@ def test_empty_trend_renders_placeholder():
     assert len(fig.layout.annotations) == 1
 
 
+def test_trend_x_range_is_clamped_to_data(make_df):
+    """A far-future period band must not stretch the axis past the data."""
+    df = make_df("2025-09-01", "2025-09-30 23:00")
+    trend = compute_daily_trend(df, MODALITIES)
+    future = PeriodInstance(
+        "Summer 2026-27",
+        PeriodKind.SUMMER,
+        ((date(2027, 7, 22), date(2027, 8, 31)),),
+    )
+
+    fig = plot_daily_trend(trend, instances=[future])
+
+    # The band is still drawn, but the range stops at the data.
+    assert len(_shapes(fig, "rect")) == 1
+    start, end = fig.layout.xaxis.range
+    assert pd.Timestamp(start).date() == date(2025, 9, 1)
+    assert pd.Timestamp(end).date() == date(2025, 9, 30)
+
+
 # ---------------------------------------------------------------------------
 # Comparison charts
 # ---------------------------------------------------------------------------
