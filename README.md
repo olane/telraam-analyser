@@ -29,13 +29,15 @@ trends. This app fills that gap.
 - **Weekday alignment** — like weekdays are compared with like, using the
   chosen comparison axis.
 - **Trends over time** — daily totals with a rolling average, a
-  weekday-adjusted trend, and side-by-side term / not-term typical-week
-  heatmaps. Periods are shaded as bands on the timeline, clipped to the
-  loaded data so future calendar years don't add blank space.
+  weekday-adjusted trend, and typical-week heatmaps broken down by the chosen
+  comparison axis (one plot per group, e.g. weekday vs weekend). Periods are
+  shaded as bands on the timeline, clipped to the loaded data so future
+  calendar years don't add blank space.
 - **Exclusions** — drop roadworks, closures or other anomalies from analysis;
   excluded ranges are shown on the trend chart.
-- **Speed, modal split and hourly profiles** — an overall speed distribution
-  and a V85 trend over time, plus CSV export of derived aggregates.
+- **Speed, modal split and hourly profiles** — a speed distribution and a V85
+  trend on Trends; period, totals and modal-split tables on Detail, plus CSV
+  export of derived aggregates.
 - **Local parquet cache** with gap-filling, so each date range is fetched once.
 
 ## Setup

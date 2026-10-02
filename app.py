@@ -32,7 +32,6 @@ if not config.is_configured:
     st.stop()
 
 init_state(config)
-st.session_state["controls"] = render_sidebar(config, st.session_state["calendar"])
 
 pages = [
     st.Page(
@@ -62,4 +61,10 @@ pages = [
     ),
 ]
 
-st.navigation(pages).run()
+# Navigation is hidden and re-rendered as links inside the sidebar controls,
+# below the data-loading section, so views read as "after loading data".
+navigation = st.navigation(pages, position="hidden")
+st.session_state["controls"] = render_sidebar(
+    config, st.session_state["calendar"], pages
+)
+navigation.run()

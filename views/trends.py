@@ -1,26 +1,27 @@
-"""Trends view: long-term trend, weekday-adjusted trend, typical week."""
+"""Trends view: long-term trend, weekday-adjusted trend, typical week, speed."""
 
 from __future__ import annotations
 
 import streamlit as st
 
 from analysis import (
-    compute_daily_totals,
     compute_daily_trend,
+    compute_speed_distribution,
+    compute_speed_summary,
+    compute_speed_trend,
     compute_typical_week,
-    compute_weekday_totals,
     dedupe_modalities,
-    term_status,
     weekday_adjusted_trend,
     weekday_hour_matrix,
 )
 from charts import (
     plot_daily_trend,
+    plot_speed_distribution,
+    plot_speed_trend,
     plot_typical_week,
     plot_weekday_adjusted_trend,
-    plot_weekday_comparison,
 )
-from domain.models import NOT_TERM_LABEL, TERM_LABEL
+from ui.components import csv_download
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
@@ -41,6 +42,15 @@ def _modality_frame(df, modalities: list[str], choice: str):
         frame["total"] = frame[columns].sum(axis=1)
         return frame, "total", "all selected modalities"
     return df, choice, choice
+
+
+def _ordered_groups(df) -> list[str]:
+    """Return the comparison groups present in *df* in their canonical order."""
+    labels = df[GROUP_COL].dropna()
+    if hasattr(labels, "cat"):
+        present = set(labels)
+        return [g for g in labels.cat.categories if g in present]
+    return list(dict.fromkeys(labels))
 
 
 def render() -> None:
@@ -119,52 +129,56 @@ def render() -> None:
         st.info("No data matches the current comparison.")
         return
 
-    st.subheader("Weekday comparison")
-    comparison_choice = st.selectbox(
-        "Weekday comparison modality",
-        [ALL_OPTION, *modalities],
-        key="trend_wd_modality",
-        help="Show a single mode, or the combined total of every mode selected "
-        "in the sidebar.",
-    )
-    daily_frame, daily_col, daily_display = _modality_frame(
-        assigned, modalities, comparison_choice
-    )
-    daily = compute_daily_totals(
-        daily_frame, [daily_col], group_col=GROUP_COL
-    )
-    weekday_df = compute_weekday_totals(
-        daily, [daily_col], group_col=GROUP_COL
-    )
-    st.plotly_chart(
-        plot_weekday_comparison(
-            weekday_df, daily_col, group_col=GROUP_COL
-        ),
-        use_container_width=True,
-        key="trend_weekday_comparison",
-    )
-
     st.subheader("Typical week")
     st.caption(
-        "Term time versus not term time — average week, all matching days "
-        "rolled together."
+        f"Average week broken down by {controls.comparison.mode.human.lower()} "
+        "— one plot per comparison group."
     )
     typical_frame, typical_col, typical_display = _modality_frame(
-        df, modalities, comparison_choice
+        assigned, modalities, trend_choice
     )
-    typical_frame["term_group"] = term_status(typical_frame)
     typical = compute_typical_week(
-        typical_frame, [typical_col], group_col="term_group"
+        typical_frame, [typical_col], group_col=GROUP_COL
     )
-    left, right = st.columns(2)
-    for column, status in ((left, TERM_LABEL), (right, NOT_TERM_LABEL)):
+    columns = st.columns(2)
+    for i, group in enumerate(_ordered_groups(assigned)):
         matrix = weekday_hour_matrix(
-            typical, status, typical_col, group_col="term_group"
+            typical, group, typical_col, group_col=GROUP_COL
         )
-        column.plotly_chart(
+        columns[i % 2].plotly_chart(
             plot_typical_week(
-                matrix, title=f"Typical week — {status} — {typical_display}"
+                matrix, title=f"Typical week — {group} — {typical_display}"
             ),
             use_container_width=True,
-            key=f"trend_typical_{status}",
+            key=f"trend_typical_{group}",
         )
+
+    st.subheader("Speed")
+    unit = st.radio("Speed unit", ["mph", "km/h"], horizontal=True)
+    summary = compute_speed_summary(df, unit=unit)
+    if summary is not None and not summary.empty:
+        st.dataframe(summary, use_container_width=True, hide_index=True)
+
+        speed = compute_speed_distribution(df, unit=unit)
+        if speed is not None and not speed.empty:
+            st.plotly_chart(
+                plot_speed_distribution(speed, unit=unit),
+                use_container_width=True,
+                key="trend_speed",
+            )
+            csv_download(
+                speed, "speed_distribution.csv", "Download speed data (CSV)"
+            )
+
+        speed_trend = compute_speed_trend(df, unit=unit)
+        if speed_trend is not None and not speed_trend.empty:
+            st.plotly_chart(
+                plot_speed_trend(speed_trend, unit=unit),
+                use_container_width=True,
+                key="trend_speed_trend",
+            )
+            csv_download(
+                speed_trend, "speed_trend.csv", "Download V85 trend (CSV)"
+            )
+    else:
+        st.info("No speed data is available for this segment or selection.")

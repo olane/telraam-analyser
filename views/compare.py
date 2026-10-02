@@ -15,7 +15,6 @@ from charts import (
     plot_modal_split,
     plot_weekday_comparison,
 )
-from ui.components import period_summary
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
@@ -46,17 +45,18 @@ def render() -> None:
         st.warning("No data matches the current filters or comparison.")
         return
 
-    period_summary(
-        controls.instances, caption="Periods marked on the trend charts."
-    )
-    st.divider()
-
     daily = compute_daily_totals(df, modalities, group_col=GROUP_COL)
     weekday_df = compute_weekday_totals(
         daily, modalities, group_col=GROUP_COL
     )
 
-    modality = st.selectbox("Modality", modalities, key="compare_modality")
+    default_modality = "car" if "car" in modalities else modalities[0]
+    modality = st.selectbox(
+        "Modality",
+        modalities,
+        index=modalities.index(default_modality),
+        key="compare_modality",
+    )
     st.plotly_chart(
         plot_weekday_comparison(weekday_df, modality, group_col=GROUP_COL),
         use_container_width=True,
