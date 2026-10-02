@@ -184,7 +184,7 @@ class CacheManager:
         gaps = _find_gaps(coverage, start, end)
 
         if not gaps:
-            return _slice(cached, start, end)
+            return slice_frame(cached, start, end)
 
         estimated = sum(chunk_count(g[0], g[1]) for g in gaps)
         if self.budget is not None and not self.budget.try_reserve(estimated):
@@ -215,10 +215,10 @@ class CacheManager:
             merged = cached if cached is not None else pd.DataFrame()
 
         self._save_coverage(path, list(coverage) + list(gaps))
-        return _slice(merged, start, end)
+        return slice_frame(merged, start, end)
 
 
-def _slice(df: pd.DataFrame | None, start: date, end: date) -> pd.DataFrame:
+def slice_frame(df: pd.DataFrame | None, start: date, end: date) -> pd.DataFrame:
     if df is None or df.empty:
         return pd.DataFrame()
     start_ts = pd.Timestamp(start, tz="UTC")

@@ -12,7 +12,12 @@ from datetime import date, timedelta
 import pandas as pd
 import streamlit as st
 
-from analysis import dedupe_modalities, get_available_modalities, resolve
+from analysis import (
+    WEEKDAY_LABELS,
+    dedupe_modalities,
+    get_available_modalities,
+    resolve,
+)
 from domain.models import (
     HOLIDAY_KINDS,
     Calendar,
@@ -28,7 +33,6 @@ from domain.models import (
 from ui.components import attribution_footer
 from ui.state import Controls, ensure_data
 
-DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 DEFAULT_MODALITIES = ("pedestrian", "bike", "car", "heavy", "night")
 
 # Range presets in days. ``None`` means "everything since the API's earliest
@@ -65,7 +69,7 @@ def _time_range(config) -> tuple[date, date]:
     end = date.today() + timedelta(days=1)
     if span is None:
         return config.earliest_data, end
-    return date.today() - timedelta(days=span), end
+    return date.today() - timedelta(days=span - 1), end
 
 
 def _periods(calendar: Calendar) -> ComparisonConfig:
@@ -141,7 +145,7 @@ def _filters(df) -> list[str]:
             "Hours of day", 0, 23, (0, 23)
         )
         st.session_state["_day_labels"] = st.multiselect(
-            "Days of week", DAY_LABELS, default=DAY_LABELS
+            "Days of week", WEEKDAY_LABELS, default=WEEKDAY_LABELS
         )
     available = get_available_modalities(df) if df is not None else []
     combined = [m for m in available if not is_directional(m)]
@@ -242,11 +246,11 @@ def render_sidebar(config, calendar: Calendar, pages) -> Controls:
     _exclusions()
 
     hour_range = st.session_state.get("_hour_range", (0, 23))
-    day_labels = st.session_state.get("_day_labels", DAY_LABELS)
+    day_labels = st.session_state.get("_day_labels", WEEKDAY_LABELS)
     filters = FilterSettings(
         start_hour=hour_range[0],
         end_hour=hour_range[1],
-        selected_days=[DAY_LABELS.index(d) for d in day_labels],
+        selected_days=[WEEKDAY_LABELS.index(d) for d in day_labels],
         selected_modalities=selected_modalities,
     )
 
