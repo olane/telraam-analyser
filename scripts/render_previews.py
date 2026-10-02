@@ -210,19 +210,21 @@ def kpi_cards(ax, kpis):
     """Draw Streamlit-style metric cards. Each kpi: (label, value, delta?)."""
     ax.axis("off")
     width = min(0.22, 0.96 / max(len(kpis), 1) - 0.02)
+    bottom, top = 0.05, 0.85
     for i, (label, value, delta) in enumerate(kpis):
         x = 0.02 + i * 0.24
         ax.add_patch(
-            plt.Rectangle((x, 0.4), width, 0.5, transform=ax.transAxes,
-                          facecolor="#f7fafc", edgecolor="#e3e8ee")
+            plt.Rectangle((x, bottom), width, top - bottom,
+                          transform=ax.transAxes, facecolor="#f7fafc",
+                          edgecolor="#e3e8ee")
         )
-        ax.text(x + 0.015, 0.75, label, transform=ax.transAxes,
+        ax.text(x + 0.02, top - 0.2, label, transform=ax.transAxes,
                 fontsize=9, color="#607d8b")
-        ax.text(x + 0.015, 0.55, value, transform=ax.transAxes,
+        ax.text(x + 0.02, top - 0.42, value, transform=ax.transAxes,
                 fontsize=15, color="#0b6e99", fontweight="bold")
         if delta:
             colour = "#2e7d32" if delta.startswith("+") else "#c62828"
-            ax.text(x + 0.015, 0.43, delta, transform=ax.transAxes,
+            ax.text(x + 0.02, top - 0.62, delta, transform=ax.transAxes,
                     fontsize=10, color=colour)
 
 
@@ -357,7 +359,7 @@ def render_compare(out_dir: Path, dpi: int):
 
     fig = plt.figure(figsize=(12, 17))
     gs = fig.add_gridspec(
-        5, 2, hspace=0.55, wspace=0.25, height_ratios=[0.55, 1, 1, 1, 1]
+        5, 2, hspace=0.6, wspace=0.25, height_ratios=[0.42, 1, 1, 1, 1]
     )
 
     # Headline comparison: one card per group, deltas against the baseline.
