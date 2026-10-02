@@ -7,7 +7,6 @@ from datetime import date, timedelta
 import pandas as pd
 
 from domain.models import (
-    HOLIDAY_KINDS,
     Calendar,
     ComparisonConfig,
     ComparisonMode,
@@ -49,7 +48,7 @@ def holiday_vs_term(
     if terms:
         out.append(aggregate("Term time", PeriodKind.TERM, terms))
     if holidays:
-        out.append(aggregate("School holidays", PeriodKind.CUSTOM, holidays))
+        out.append(aggregate("School holidays", PeriodKind.HOLIDAY, holidays))
     return out
 
 
@@ -57,21 +56,6 @@ def year_on_year(
     calendar: Calendar, kind: PeriodKind = PeriodKind.CHRISTMAS
 ) -> list[PeriodInstance]:
     matches = [i for i in calendar.instances if i.kind is kind]
-    return sorted(matches, key=lambda i: i.start or date.min)
-
-
-def by_kind(
-    calendar: Calendar,
-    kinds: list[PeriodKind] | None = None,
-    year: str | None = None,
-) -> list[PeriodInstance]:
-    kinds = kinds or list(HOLIDAY_KINDS)
-    year = year or latest_year(calendar)
-    matches = [
-        i
-        for i in calendar.instances
-        if i.kind in kinds and (year is None or i.academic_year == year)
-    ]
     return sorted(matches, key=lambda i: i.start or date.min)
 
 
@@ -123,23 +107,11 @@ def resolve(
     """Turn a comparison configuration into concrete period instances."""
     mode = config.mode
 
-    if mode is ComparisonMode.ALL:
-        # Label every period so trend bands are complete.
-        instances = calendar.instances
-        if config.years:
-            instances = [i for i in instances if i.academic_year in config.years]
-        return list(instances)
-
     if mode is ComparisonMode.HOLIDAY_VS_TERM:
         return holiday_vs_term(calendar, config.years or None)
 
     if mode is ComparisonMode.YEAR_ON_YEAR:
         return year_on_year(calendar, config.kind or PeriodKind.CHRISTMAS)
-
-    if mode is ComparisonMode.BY_KIND:
-        kinds = config.kinds or ([config.kind] if config.kind else None)
-        year = config.years[-1] if config.years else None
-        return by_kind(calendar, kinds, year)
 
     if mode is ComparisonMode.BEFORE_AFTER:
         if config.cutover is None:
@@ -150,13 +122,20 @@ def resolve(
             config.include_previous_year,
         )
 
-    # CUSTOM: resolve explicit labels against the calendar.
-    out: list[PeriodInstance] = []
-    for label in config.period_labels:
-        found = calendar.get(label)
-        if found is not None:
-            out.append(found)
-    return out
+    if mode is ComparisonMode.CUSTOM:
+        out: list[PeriodInstance] = []
+        for label in config.period_labels:
+            found = calendar.get(label)
+            if found is not None:
+                out.append(found)
+        return out
+
+    # Axis-only modes (weekday/weekend, time of day, roadworks) still mark
+    # every calendar period so trend charts have their usual context bands.
+    instances = calendar.instances
+    if config.years:
+        instances = [i for i in instances if i.academic_year in config.years]
+    return list(instances)
 
 
 # ---------------------------------------------------------------------------

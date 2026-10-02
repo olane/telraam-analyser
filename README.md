@@ -12,26 +12,30 @@ trends. This app fills that gap.
 
 - **Pick a sensor and a time range, then explore** — the sidebar downloads the
   whole selected range into the local parquet cache (rate limits excepted)
-  independently of how you analyse it. A comparison recipe only labels periods
-  in the already-loaded data.
+  independently of how you analyse it. The comparison axis only groups the
+  already-loaded data.
 - **Typed, calendar-aware periods** — school terms and holidays (Christmas,
   half terms, Easter, ...) are first-class, each tagged with a kind and an
   academic year so "similar periods" can be compared automatically.
-- **Opinionated comparisons**
-  - Holidays vs term time
-  - Year on year (same holiday, different years)
-  - Compare holiday types
+- **Meaningful comparison axes** — instead of one bucket per holiday, charts
+  group rows into a small set of buckets:
+  - Term time vs holidays
+  - Same period, previous year
   - Before / after an intervention, optionally with the same window last year
+  - Weekday vs weekend
+  - Time of day (school-run and peak bands)
+  - Roadworks vs baseline
   - Custom selection of any periods
-- **Weekday alignment** — like weekdays are compared with like, with an
-  optional week-by-week breakdown for long holidays.
+- **Weekday alignment** — like weekdays are compared with like, using the
+  chosen comparison axis.
 - **Trends over time** — daily totals with a rolling average, a
-  weekday-adjusted trend, and a typical-week heatmap. Periods are shaded as
-  bands on the timeline.
+  weekday-adjusted trend, and side-by-side term / not-term typical-week
+  heatmaps. Periods are shaded as bands on the timeline, clipped to the
+  loaded data so future calendar years don't add blank space.
 - **Exclusions** — drop roadworks, closures or other anomalies from analysis;
   excluded ranges are shown on the trend chart.
-- **Speed, modal split and hourly profiles**, plus CSV export of derived
-  aggregates.
+- **Speed, modal split and hourly profiles** — an overall speed distribution
+  and a V85 trend over time, plus CSV export of derived aggregates.
 - **Local parquet cache** with gap-filling, so each date range is fetched once.
 
 ## Setup

@@ -14,54 +14,59 @@ WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
 def compute_weekday_totals(
-    daily_df: pd.DataFrame, modalities: list[str]
+    daily_df: pd.DataFrame, modalities: list[str], group_col: str = "period_label"
 ) -> pd.DataFrame:
-    """Mean daily total per (period, weekday) — the core comparison view.
+    """Mean daily total per (group, weekday) — the core comparison view.
 
     *daily_df* is the output of :func:`analysis.aggregates.compute_daily_totals`.
     """
     df = daily_df.copy()
     df["weekday"] = pd.to_datetime(df["day"]).dt.dayofweek
     return (
-        df.groupby(["period_label", "weekday"])[modalities]
+        df.groupby([group_col, "weekday"], observed=True)[modalities]
         .mean()
         .reset_index()
     )
 
 
 def compute_weekday_occurrence_totals(
-    daily_df: pd.DataFrame, modalities: list[str]
+    daily_df: pd.DataFrame, modalities: list[str], group_col: str = "period_label"
 ) -> pd.DataFrame:
-    """Mean daily total per (period, weekday, occurrence within period)."""
+    """Mean daily total per (group, weekday, occurrence within group)."""
     df = daily_df.copy()
     df["weekday"] = pd.to_datetime(df["day"]).dt.dayofweek
-    df = df.sort_values(["period_label", "weekday", "day"])
+    df = df.sort_values([group_col, "weekday", "day"])
     df["weekday_occurrence"] = (
-        df.groupby(["period_label", "weekday"]).cumcount() + 1
+        df.groupby([group_col, "weekday"], observed=True).cumcount() + 1
     )
     return (
-        df.groupby(["period_label", "weekday", "weekday_occurrence"])[modalities]
+        df.groupby(
+            [group_col, "weekday", "weekday_occurrence"], observed=True
+        )[modalities]
         .mean()
         .reset_index()
     )
 
 
 def compute_typical_week(
-    df: pd.DataFrame, modalities: list[str]
+    df: pd.DataFrame, modalities: list[str], group_col: str = "period_label"
 ) -> pd.DataFrame:
-    """Mean count per (period, weekday, hour) — for typical-week heatmaps."""
+    """Mean count per (group, weekday, hour) — for typical-week heatmaps."""
     return (
-        df.groupby(["period_label", "weekday", "hour"])[modalities]
+        df.groupby([group_col, "weekday", "hour"], observed=True)[modalities]
         .mean()
         .reset_index()
     )
 
 
 def weekday_hour_matrix(
-    typical_week_df: pd.DataFrame, period_label: str, modality: str
+    typical_week_df: pd.DataFrame,
+    group: str,
+    modality: str,
+    group_col: str = "period_label",
 ) -> pd.DataFrame:
-    """Pivot a typical week into a weekday × hour matrix for one period."""
-    subset = typical_week_df[typical_week_df["period_label"] == period_label]
+    """Pivot a typical week into a weekday × hour matrix for one group."""
+    subset = typical_week_df[typical_week_df[group_col] == group]
     matrix = subset.pivot_table(
         index="weekday", columns="hour", values=modality, aggfunc="mean"
     )

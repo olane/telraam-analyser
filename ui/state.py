@@ -8,17 +8,13 @@ from datetime import date
 import pandas as pd
 import streamlit as st
 
-from analysis import (
-    drop_exclusions,
-    filter_days_of_week,
-    filter_time_of_day,
-    label_periods,
-)
+from analysis import prepare_frame
 from api_client import TelraamClient
 from cache import CacheManager
 from config import Config
 from domain.calendars import default_calendar
 from domain.models import (
+    ComparisonConfig,
     Exclusion,
     FilterSettings,
     PeriodInstance,
@@ -34,6 +30,7 @@ class Controls:
     filters: FilterSettings
     exclusions: list[Exclusion]
     instances: list[PeriodInstance]
+    comparison: ComparisonConfig = field(default_factory=ComparisonConfig)
     df: pd.DataFrame = field(default_factory=pd.DataFrame)
     error: str | None = None
 
@@ -119,19 +116,13 @@ def get_controls() -> Controls:
 
 
 def prepared_df(keep_only_assigned: bool = False) -> pd.DataFrame:
-    """Apply exclusions, filters and period labels to the loaded frame."""
+    """Apply exclusions, filters, period labels and the comparison group."""
     controls = get_controls()
-    df = controls.df
-    if df is None or df.empty:
-        return pd.DataFrame()
-
-    df = drop_exclusions(df, controls.exclusions)
-    df = filter_time_of_day(
-        df, controls.filters.start_hour, controls.filters.end_hour
+    return prepare_frame(
+        controls.df,
+        controls.filters,
+        controls.exclusions,
+        controls.instances,
+        controls.comparison,
+        keep_only_assigned=keep_only_assigned,
     )
-    df = filter_days_of_week(df, controls.filters.selected_days)
-    df = label_periods(df, controls.instances)
-
-    if keep_only_assigned:
-        df = df[df["period_label"].notna()].copy()
-    return df

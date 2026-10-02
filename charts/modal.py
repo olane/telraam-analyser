@@ -12,19 +12,20 @@ def plot_modal_split(
     split_df: pd.DataFrame,
     modalities: list[str],
     height: int = 400,
+    group_col: str = "period_label",
 ) -> go.Figure:
-    """Grouped bars: one bar per period for each modality share."""
+    """Grouped bars: one bar per comparison group for each modality share."""
     if split_df is None or split_df.empty:
         from charts.theme import empty_figure
 
         return empty_figure()
 
-    groups = list(dict.fromkeys(split_df["period_label"]))
+    groups = list(dict.fromkeys(split_df[group_col]))
     colours = period_colour_map(groups)
 
     fig = go.Figure()
     for group in groups:
-        row = split_df[split_df["period_label"] == group].iloc[0]
+        row = split_df[split_df[group_col] == group].iloc[0]
         fig.add_trace(
             go.Bar(
                 x=modalities,

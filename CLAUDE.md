@@ -37,9 +37,12 @@ Requires `TELRAAM_API_KEY` and `TELRAAM_SEGMENT_IDS` — from `.env` locally or
 - Periods are first-class: a `PeriodInstance` has a `PeriodKind`, ranges and an
   `academic_year`; `Calendar` groups them
 - Download is decoupled from analysis: the sidebar picks a sensor + time range
-  and fetches the whole range (cache-filled, budget-guarded); a comparison
-  recipe (`ComparisonMode`) then only labels periods in the already-loaded data
-  and is shared by every view
+  and fetches the whole range (cache-filled, budget-guarded); a comparison axis
+  (`ComparisonMode`) then only groups the already-loaded data (via
+  `group_label`) and is shared by every view — never one bucket per period
+- Comparison aggregations/charts take a `group_col` (default `period_label`),
+  so the pure API stays backward compatible while views pass `group_label`
+- `analysis/pipeline.py::prepare_frame` is the pure frame-prep shared by views
 - Add academic years in `domain/calendars.py::CAMBRIDGE_YEARS`; year-on-year
   works automatically once a second year exists
 - API requests are chunked at 90-day boundaries with 1 req/sec rate limiting; a

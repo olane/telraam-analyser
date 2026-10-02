@@ -4,7 +4,12 @@ from __future__ import annotations
 
 import pandas as pd
 
-from domain.models import MODALITY_ORDER, Exclusion, PeriodInstance
+from domain.models import (
+    MODALITY_ORDER,
+    Exclusion,
+    PeriodInstance,
+    is_directional,
+)
 
 # ---------------------------------------------------------------------------
 # Column detection
@@ -13,6 +18,23 @@ from domain.models import MODALITY_ORDER, Exclusion, PeriodInstance
 def get_available_modalities(df: pd.DataFrame) -> list[str]:
     """Return modality columns present in *df*, in a sensible order."""
     return [m for m in MODALITY_ORDER if m in df.columns]
+
+
+def dedupe_modalities(modalities: list[str]) -> list[str]:
+    """Drop a combined modality when its directional variants are selected.
+
+    ``car`` is the sum of ``car_lft`` and ``car_rgt``, so summing all three
+    double counts. Prefer the directional split when both are present.
+    """
+    selected = set(modalities)
+    out: list[str] = []
+    for modality in modalities:
+        if not is_directional(modality) and (
+            f"{modality}_lft" in selected or f"{modality}_rgt" in selected
+        ):
+            continue
+        out.append(modality)
+    return out
 
 
 def get_speed_hist_columns(df: pd.DataFrame) -> str | None:
@@ -67,17 +89,43 @@ def filter_days_of_week(df: pd.DataFrame, days: list[int]) -> pd.DataFrame:
     return df[df["weekday"].isin(days)]
 
 
+def _exclusion_mask(
+    index: pd.DatetimeIndex, exclusions: list[Exclusion]
+) -> pd.Series:
+    mask = pd.Series(False, index=index)
+    for exclusion in exclusions:
+        if exclusion.ranges:
+            mask |= _range_mask(index, exclusion.ranges)
+    return mask
+
+
+def mark_exclusions(
+    df: pd.DataFrame, exclusions: list[Exclusion]
+) -> pd.DataFrame:
+    """Flag excluded rows without dropping them.
+
+    The roadworks comparison axis needs to keep excluded rows so it can bucket
+    them against the baseline; every other axis drops them via
+    :func:`drop_exclusions`.
+    """
+    df = df.copy()
+    df["is_excluded"] = (
+        _exclusion_mask(df.index, exclusions)
+        if exclusions
+        else False
+    )
+    return df
+
+
 def drop_exclusions(
     df: pd.DataFrame, exclusions: list[Exclusion]
 ) -> pd.DataFrame:
     """Remove any excluded date ranges (roadworks, closures, ...)."""
     if not exclusions:
         return df
-    mask = pd.Series(False, index=df.index)
-    for exclusion in exclusions:
-        if exclusion.ranges:
-            mask |= _range_mask(df.index, exclusion.ranges)
-    return df[~mask]
+    if "is_excluded" in df.columns:
+        return df[~df["is_excluded"].astype(bool)]
+    return df[~_exclusion_mask(df.index, exclusions)]
 
 
 # ---------------------------------------------------------------------------

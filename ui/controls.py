@@ -12,7 +12,7 @@ from datetime import date, timedelta
 import pandas as pd
 import streamlit as st
 
-from analysis import get_available_modalities, resolve
+from analysis import dedupe_modalities, get_available_modalities, resolve
 from domain.models import (
     HOLIDAY_KINDS,
     Calendar,
@@ -20,6 +20,9 @@ from domain.models import (
     ComparisonMode,
     Exclusion,
     FilterSettings,
+    base_of,
+    is_directional,
+    modality_label,
 )
 from ui.components import attribution_footer
 from ui.state import Controls, ensure_data
@@ -65,20 +68,21 @@ def _time_range(config) -> tuple[date, date]:
 
 
 def _periods(calendar: Calendar) -> ComparisonConfig:
-    """Choose the shared set of periods the views should analyse."""
-    st.sidebar.subheader("Periods to analyse")
+    """Choose the comparison axis and the calendar periods to label."""
+    st.sidebar.subheader("Comparison")
     mode = st.sidebar.selectbox(
-        "Recipe",
+        "Compare by",
         list(ComparisonMode),
         format_func=lambda m: m.human,
-        help="Which periods to label. Changing this does not re-download data.",
+        help="How rows are grouped in the comparison charts. Changing this "
+        "does not re-download data.",
     )
     config = ComparisonConfig(mode=mode)
 
     available_years = calendar.years()
     available_kinds = [k for k in HOLIDAY_KINDS if calendar.of_kind(k)]
 
-    if mode in (ComparisonMode.ALL, ComparisonMode.HOLIDAY_VS_TERM):
+    if mode is ComparisonMode.HOLIDAY_VS_TERM:
         config.years = st.sidebar.multiselect(
             "Academic years", available_years, default=available_years
         )
@@ -97,22 +101,6 @@ def _periods(calendar: Calendar) -> ComparisonConfig:
         else:
             st.sidebar.warning("No holidays defined in the calendar.")
 
-    elif mode is ComparisonMode.BY_KIND:
-        config.kinds = st.sidebar.multiselect(
-            "Holiday types",
-            available_kinds,
-            default=available_kinds,
-            format_func=lambda k: k.human,
-        )
-        if available_years:
-            config.years = [
-                st.sidebar.selectbox(
-                    "Academic year",
-                    available_years,
-                    index=len(available_years) - 1,
-                )
-            ]
-
     elif mode is ComparisonMode.BEFORE_AFTER:
         default_cutover = date.today() - timedelta(days=90)
         config.cutover = st.sidebar.date_input(
@@ -130,6 +118,13 @@ def _periods(calendar: Calendar) -> ComparisonConfig:
             "Periods", calendar.labels()
         )
 
+    elif mode is ComparisonMode.ROADWORKS:
+        if not st.session_state.get("exclusions"):
+            st.sidebar.info(
+                "Add an exclusion below to compare roadworks against the "
+                "baseline."
+            )
+
     return config
 
 
@@ -143,8 +138,37 @@ def _filters(df) -> list[str]:
         "Days of week", DAY_LABELS, default=DAY_LABELS
     )
     available = get_available_modalities(df) if df is not None else []
-    defaults = [m for m in DEFAULT_MODALITIES if m in available]
-    return st.sidebar.multiselect("Modalities", available, default=defaults)
+    combined = [m for m in available if not is_directional(m)]
+    variants = [m for m in available if is_directional(m)]
+
+    defaults = [m for m in DEFAULT_MODALITIES if m in combined]
+    selected = list(
+        st.sidebar.multiselect(
+            "Modalities",
+            combined,
+            default=defaults,
+            format_func=modality_label,
+            help="Combined counts per transport mode.",
+        )
+    )
+
+    if variants:
+        if st.sidebar.checkbox(
+            "Split by direction (left / right)",
+            value=False,
+            help="Use the S2 left/right variants. Selecting a direction "
+            "replaces its combined total so counts are not double counted.",
+        ):
+            selected_variants = st.sidebar.multiselect(
+                "Directional modalities",
+                variants,
+                default=[m for m in variants if base_of(m) in selected],
+                format_func=modality_label,
+            )
+            selected += list(selected_variants)
+
+    # Never sum a combined mode and its direction split together.
+    return dedupe_modalities(selected)
 
 
 def _exclusions() -> None:
@@ -216,6 +240,7 @@ def render_sidebar(config, calendar: Calendar) -> Controls:
         filters=filters,
         exclusions=list(st.session_state["exclusions"]),
         instances=instances,
+        comparison=comparison,
         df=df if df is not None else pd.DataFrame(),
         error=error,
     )

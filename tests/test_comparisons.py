@@ -4,7 +4,6 @@ from datetime import date
 
 from analysis.comparisons import (
     build_before_after,
-    by_kind,
     holiday_vs_term,
     latest_year,
     resolve,
@@ -54,36 +53,35 @@ def test_year_on_year_returns_one_per_year():
     assert [i.academic_year for i in instances] == ["2025-26", "2026-27"]
 
 
-def test_by_kind_returns_holidays_for_year():
-    instances = by_kind(default_calendar(), [PeriodKind.EASTER, PeriodKind.MAY_HALF])
-    assert {i.kind for i in instances} == {PeriodKind.EASTER, PeriodKind.MAY_HALF}
-    assert all(i.academic_year == "2026-27" for i in instances)
-
-
 def test_latest_year():
     assert latest_year(default_calendar()) == "2026-27"
 
 
-def test_all_mode_filters_by_year():
+def test_axis_modes_mark_every_period():
+    """Time/weekday/roadworks axes need no calendar subset: mark them all."""
     calendar = default_calendar()
-    every = resolve(calendar, ComparisonConfig(mode=ComparisonMode.ALL))
-    assert len(every) == len(calendar.instances)
+    for mode in (
+        ComparisonMode.WEEKDAY_VS_WEEKEND,
+        ComparisonMode.TIME_OF_DAY,
+        ComparisonMode.ROADWORKS,
+    ):
+        instances = resolve(calendar, ComparisonConfig(mode=mode))
+        assert len(instances) == len(calendar.instances)
 
-    none = resolve(
+
+def test_axis_modes_can_filter_by_year():
+    calendar = default_calendar()
+    instances = resolve(
         calendar,
-        ComparisonConfig(mode=ComparisonMode.ALL, years=["1999-00"]),
+        ComparisonConfig(
+            mode=ComparisonMode.TIME_OF_DAY, years=["2025-26"]
+        ),
     )
-    assert none == []
+    assert all(i.academic_year == "2025-26" for i in instances)
 
 
 def test_resolve_dispatches_by_mode():
     calendar = default_calendar()
-
-    every = resolve(
-        calendar,
-        ComparisonConfig(mode=ComparisonMode.ALL),
-    )
-    assert len(every) == len(calendar.instances)
 
     before_after = resolve(
         calendar,

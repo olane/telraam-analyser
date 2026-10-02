@@ -32,6 +32,7 @@ from charts import (
     plot_hourly_profile,
     plot_modal_split,
     plot_speed_distribution,
+    plot_speed_trend,
     plot_typical_week,
     plot_weekday_comparison,
     plot_weekday_occurrence,
@@ -107,6 +108,25 @@ def test_empty_trend_renders_placeholder():
     assert len(fig.layout.annotations) == 1
 
 
+def test_trend_x_range_is_clamped_to_data(make_df):
+    """A far-future period band must not stretch the axis past the data."""
+    df = make_df("2025-09-01", "2025-09-30 23:00")
+    trend = compute_daily_trend(df, MODALITIES)
+    future = PeriodInstance(
+        "Summer 2026-27",
+        PeriodKind.SUMMER,
+        ((date(2027, 7, 22), date(2027, 8, 31)),),
+    )
+
+    fig = plot_daily_trend(trend, instances=[future])
+
+    # The band is still drawn, but the range stops at the data.
+    assert len(_shapes(fig, "rect")) == 1
+    start, end = fig.layout.xaxis.range
+    assert pd.Timestamp(start).date() == date(2025, 9, 1)
+    assert pd.Timestamp(end).date() == date(2025, 9, 30)
+
+
 # ---------------------------------------------------------------------------
 # Comparison charts
 # ---------------------------------------------------------------------------
@@ -121,6 +141,21 @@ def test_weekday_comparison_has_one_trace_per_period(make_df):
     for trace in fig.data:
         assert len(trace.x) == 7
         assert len(trace.y) == 7
+
+
+def test_weekday_comparison_groups_by_comparison_axis(make_df):
+    df = _labelled(make_df)
+    daily = compute_daily_totals(df, MODALITIES)
+    weekday_df = compute_weekday_totals(daily, MODALITIES)
+    weekday_df["group_label"] = [
+        "Term time" if i % 2 else "School holidays"
+        for i in range(len(weekday_df))
+    ]
+
+    fig = plot_weekday_comparison(weekday_df, "car", group_col="group_label")
+
+    assert len(fig.data) == 2
+    assert {trace.name for trace in fig.data} == {"Term time", "School holidays"}
 
 
 def test_hourly_profile_has_period_x_modality_traces(make_df):
@@ -161,19 +196,21 @@ def test_weekday_occurrence_traces_per_group(make_df):
     assert all(trace.name for trace in fig.data)
 
 
-def test_speed_distribution_has_one_trace_per_period():
-    speed_df = pd.DataFrame(
-        {
-            "period_label": ["Christmas", "February half term"],
-            "0-10": [30.0, 25.0],
-            "10-20": [50.0, 55.0],
-            "20+": [20.0, 20.0],
-        }
-    )
+def test_speed_distribution_has_a_single_overall_trace():
+    speed_df = pd.DataFrame({"0-10": [30.0], "10-20": [50.0], "20+": [20.0]})
     fig = plot_speed_distribution(speed_df)
+    assert len(fig.data) == 1
+    assert len(fig.data[0].x) == 3
+
+
+def test_speed_trend_has_daily_and_rolling_traces():
+    days = pd.date_range("2026-01-01", periods=10, freq="D", tz="UTC")
+    trend_df = pd.DataFrame(
+        {"day": days, "v85": range(10), "rolling": range(10)}
+    )
+    fig = plot_speed_trend(trend_df)
     assert len(fig.data) == 2
-    for trace in fig.data:
-        assert len(trace.x) == 3
+    assert [t.name for t in fig.data] == ["Daily V85 (mph)", "7-day average"]
 
 
 def test_empty_figure_has_placeholder_annotation():
