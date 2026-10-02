@@ -1,0 +1,24 @@
+{
+  "worktree": {
+    "setup": [
+      "python3 -m venv .venv",
+      ".venv/bin/pip install -q -e \".[dev]\"",
+      "if [ ! -f .env ] && [ -f \"$PASEO_SOURCE_CHECKOUT_PATH/.env\" ]; then cp \"$PASEO_SOURCE_CHECKOUT_PATH/.env\" .env; fi"
+    ]
+  },
+  "scripts": {
+    "app": {
+      "type": "service",
+      "command": ".venv/bin/streamlit run app.py --server.address \"$HOST\" --server.port \"$PASEO_PORT\""
+    },
+    "test": {
+      "command": ".venv/bin/pytest"
+    },
+    "lint": {
+      "command": ".venv/bin/ruff check ."
+    },
+    "previews": {
+      "command": ".venv/bin/python scripts/render_previews.py"
+    }
+  }
+}
