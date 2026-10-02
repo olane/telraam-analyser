@@ -10,6 +10,10 @@ trends. This app fills that gap.
 
 ## Features
 
+- **Pick a sensor and a time range, then explore** — the sidebar downloads the
+  whole selected range into the local parquet cache (rate limits excepted)
+  independently of how you analyse it. A comparison recipe only labels periods
+  in the already-loaded data.
 - **Typed, calendar-aware periods** — school terms and holidays (Christmas,
   half terms, Easter, ...) are first-class, each tagged with a kind and an
   academic year so "similar periods" can be compared automatically.

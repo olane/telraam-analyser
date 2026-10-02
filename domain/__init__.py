@@ -2,7 +2,6 @@
 
 from domain.calendars import build_cambridge_calendar, default_calendar
 from domain.models import (
-    Alignment,
     Calendar,
     ComparisonConfig,
     ComparisonMode,
@@ -13,7 +12,6 @@ from domain.models import (
 )
 
 __all__ = [
-    "Alignment",
     "Calendar",
     "ComparisonConfig",
     "ComparisonMode",

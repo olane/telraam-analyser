@@ -165,41 +165,27 @@ class Calendar:
 # ---------------------------------------------------------------------------
 
 
-class Alignment(str, Enum):
-    """How to line up periods of different lengths."""
-
-    WEEKDAY = "weekday"
-    DAY_INDEX = "day_index"
-    ANCHOR = "anchor"
-    CALENDAR = "calendar"
-
-    @property
-    def human(self) -> str:
-        return {
-            Alignment.WEEKDAY: "Match like weekdays",
-            Alignment.DAY_INDEX: "Count day 1, 2, 3, ...",
-            Alignment.ANCHOR: "Days from anchor date",
-            Alignment.CALENDAR: "Real calendar dates",
-        }[self]
-
-
 class ComparisonMode(str, Enum):
-    """Opinionated comparison recipes."""
+    """Recipes that turn a calendar into the set of periods to analyse.
 
+    A recipe only decides *which periods* are labelled; it no longer decides
+    what gets downloaded (that is the sidebar's time range).
+    """
+
+    ALL = "all"
     HOLIDAY_VS_TERM = "holiday_vs_term"
     YEAR_ON_YEAR = "year_on_year"
     BY_KIND = "by_kind"
-    TREND = "trend"
     BEFORE_AFTER = "before_after"
     CUSTOM = "custom"
 
     @property
     def human(self) -> str:
         return {
+            ComparisonMode.ALL: "All calendar periods",
             ComparisonMode.HOLIDAY_VS_TERM: "Holidays vs term time",
             ComparisonMode.YEAR_ON_YEAR: "Year on year (same holiday)",
             ComparisonMode.BY_KIND: "Compare holiday types",
-            ComparisonMode.TREND: "Trend over time",
             ComparisonMode.BEFORE_AFTER: "Before / after an intervention",
             ComparisonMode.CUSTOM: "Custom selection",
         }[self]
@@ -209,12 +195,11 @@ class ComparisonMode(str, Enum):
 class ComparisonConfig:
     """User-chosen comparison recipe plus its parameters."""
 
-    mode: ComparisonMode = ComparisonMode.HOLIDAY_VS_TERM
+    mode: ComparisonMode = ComparisonMode.ALL
     period_labels: list[str] = field(default_factory=list)
     kind: PeriodKind | None = None
     kinds: list[PeriodKind] = field(default_factory=list)
     years: list[str] = field(default_factory=list)
-    alignment: Alignment = Alignment.WEEKDAY
     cutover: date | None = None
     window_days: int = 56
     include_previous_year: bool = False
