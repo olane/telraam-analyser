@@ -12,12 +12,59 @@ from analysis import (
     weekday_hour_matrix,
 )
 from charts import plot_typical_week
-from domain.models import ComparisonConfig, PeriodInstance
+from domain.models import ComparisonConfig, PeriodInstance, modality_label
 
 LICENSE_URL = "https://creativecommons.org/licenses/by-nc/4.0/"
 TELRAAM_URL = "https://telraam.net/"
 
 ALL_OPTION = "All"
+
+_GROUP_COLUMNS = ("group_label", "period_label")
+
+
+def humanise_aggregate(
+    df: pd.DataFrame, group_header: str = "Group"
+) -> pd.DataFrame:
+    """Rename internal aggregate columns for display.
+
+    Aggregate frames carry raw column keys (``group_label``, ``pedestrian``,
+    ``night``) straight from the analysis layer. Left as-is they leak those
+    identifiers into the UI, so map them to their human labels first.
+    """
+    if df is None or df.empty:
+        return df
+    rename: dict[str, str] = {}
+    for col in df.columns:
+        if col in _GROUP_COLUMNS:
+            rename[col] = group_header
+        elif col == "total":
+            rename[col] = "Total"
+        else:
+            rename[col] = modality_label(col)
+    return df.rename(columns=rename)
+
+
+def aggregate_table(
+    df: pd.DataFrame,
+    group_header: str = "Group",
+    decimals: int = 0,
+) -> None:
+    """Render a totals/share frame with human headers and fixed precision."""
+    if df is None or df.empty:
+        return
+    display = humanise_aggregate(df, group_header)
+    number_format = "%d" if decimals == 0 else f"%.{decimals}f"
+    config = {
+        col: st.column_config.NumberColumn(format=number_format)
+        for col in display.columns
+        if col != group_header
+    }
+    st.dataframe(
+        display,
+        use_container_width=True,
+        hide_index=True,
+        column_config=config,
+    )
 
 
 def format_pct_change(before: float, after: float) -> str | None:

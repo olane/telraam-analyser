@@ -10,7 +10,12 @@ from analysis import (
     daily_total_series,
     period_mean_daily,
 )
-from ui.components import format_pct_change, kpi_row, period_summary
+from ui.components import (
+    aggregate_table,
+    format_pct_change,
+    kpi_row,
+    period_summary,
+)
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
 
@@ -115,7 +120,7 @@ def render() -> None:
 
     if not totals.empty:
         st.subheader("Totals by group")
-        st.dataframe(totals, use_container_width=True, hide_index=True)
+        aggregate_table(totals, "Group", decimals=0)
 
     st.caption(
         "Tip: open **Trends** for long-term patterns and **Compare** for "
