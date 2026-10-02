@@ -80,14 +80,6 @@ def test_trends_modality_filter_offers_all():
     assert "All" in boxes["Trend modality"].options
 
 
-def test_compare_modality_defaults_to_car():
-    at = AppTest.from_function(_view_script, default_timeout=30).run()
-    assert not at.exception
-    boxes = {box.label: box for box in at.selectbox}
-    # Compare offers no "All" option, so it should default to cars.
-    assert boxes["Modality"].value == "car"
-
-
 def test_typical_week_groups_follow_the_comparison_axis():
     import pandas as pd
 

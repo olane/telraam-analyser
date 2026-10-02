@@ -31,9 +31,9 @@ trends. This app fills that gap.
 - **Trends over time** — daily totals with a rolling average and a
   weekday-adjusted trend. Periods are shaded as bands on the timeline, clipped
   to the loaded data so future calendar years don't add blank space.
-- **Compare** — weekday-aligned bars, typical-week heatmaps broken down by the
-  chosen comparison axis (one plot per group, e.g. weekday vs weekend), hourly
-  profiles and modal split.
+- **Compare** — weekday-aligned bars per modality selected in the sidebar,
+  typical-week heatmaps broken down by the chosen comparison axis (one plot
+  per group, e.g. weekday vs weekend), hourly profiles and modal split.
 - **Exclusions** — drop roadworks, closures or other anomalies from analysis;
   excluded ranges are shown on the trend chart.
 - **Speed, modal split and hourly profiles** — a speed distribution and a V85
