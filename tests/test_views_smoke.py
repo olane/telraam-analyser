@@ -73,9 +73,51 @@ def test_overview_renders_kpis():
     assert any(metric.delta for metric in at.metric)
 
 
-def test_trends_modality_filters_offer_all():
+def test_trends_modality_filter_offers_all():
     at = AppTest.from_function(_view_script, default_timeout=30).run()
     assert not at.exception
     boxes = {box.label: box for box in at.selectbox}
     assert "All" in boxes["Trend modality"].options
-    assert "All" in boxes["Weekday comparison modality"].options
+
+
+def test_compare_modality_defaults_to_car():
+    at = AppTest.from_function(_view_script, default_timeout=30).run()
+    assert not at.exception
+    boxes = {box.label: box for box in at.selectbox}
+    # Compare offers no "All" option, so it should default to cars.
+    assert boxes["Modality"].value == "car"
+
+
+def test_typical_week_groups_follow_the_comparison_axis():
+    import pandas as pd
+
+    from analysis import (
+        add_comparison_group,
+        add_time_columns,
+        compute_typical_week,
+        weekday_hour_matrix,
+    )
+    from domain.models import ComparisonConfig, ComparisonMode
+    from views.trends import _ordered_groups
+
+    index = pd.date_range("2026-01-05", "2026-01-18 23:00", freq="h", tz="UTC")
+    df = pd.DataFrame({"car": 10.0}, index=index)
+    df = add_time_columns(df)
+    df = add_comparison_group(
+        df, ComparisonConfig(mode=ComparisonMode.WEEKDAY_VS_WEEKEND)
+    )
+
+    assert _ordered_groups(df) == ["Weekday", "Weekend"]
+
+    typical = compute_typical_week(df, ["car"], group_col="group_label")
+    weekday = weekday_hour_matrix(
+        typical, "Weekday", "car", group_col="group_label"
+    )
+    weekend = weekday_hour_matrix(
+        typical, "Weekend", "car", group_col="group_label"
+    )
+    # Like weekdays are grouped together: weekdays fill rows, weekend blanks.
+    assert weekday.loc["Mon"].notna().all()
+    assert weekday.loc["Sat"].isna().all()
+    assert weekend.loc["Sat"].notna().all()
+    assert weekend.loc["Mon"].isna().all()

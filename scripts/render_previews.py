@@ -47,22 +47,19 @@ from analysis import (  # noqa: E402
     compute_modal_split,
     compute_period_totals,
     compute_speed_distribution,
-    compute_speed_summary,
     compute_speed_trend,
     compute_typical_week,
     compute_weekday_totals,
+    describe_instances,
     holiday_vs_term,
     keep_assigned,
     label_periods,
     period_mean_daily,
-    term_status,
     weekday_hour_matrix,
 )
 from charts.theme import KIND_COLOURS, PERIOD_COLOURS  # noqa: E402
 from domain.calendars import default_calendar  # noqa: E402
 from domain.models import (  # noqa: E402
-    NOT_TERM_LABEL,
-    TERM_LABEL,
     ComparisonConfig,
     ComparisonMode,
     Exclusion,
@@ -281,26 +278,21 @@ def _term_grouped_assigned():
 def render_trends(out_dir: Path, dpi: int):
     trend = compute_daily_trend(FRAME, MODALITIES, window=7)
     assigned = _term_grouped_assigned()
-    daily = compute_daily_totals(assigned, MODALITIES, group_col="group_label")
-    weekday_df = compute_weekday_totals(
-        daily, MODALITIES, group_col="group_label"
-    )
-    groups = list(dict.fromkeys(weekday_df["group_label"]))
-
-    term_frame = label_periods(FRAME, CAL.instances)
-    term_frame["term_group"] = term_status(term_frame)
     typical = compute_typical_week(
-        term_frame, MODALITIES, group_col="term_group"
+        assigned, MODALITIES, group_col="group_label"
     )
-    term_matrix = weekday_hour_matrix(
-        typical, TERM_LABEL, "car", group_col="term_group"
-    )
-    non_term_matrix = weekday_hour_matrix(
-        typical, NOT_TERM_LABEL, "car", group_col="term_group"
-    )
+    groups = list(dict.fromkeys(assigned["group_label"].dropna()))
+    matrices = [
+        (group, weekday_hour_matrix(typical, group, "car", group_col="group_label"))
+        for group in groups
+    ]
+    speed = compute_speed_distribution(FRAME, unit="mph")
+    v85 = compute_speed_trend(FRAME, unit="mph")
 
-    fig = plt.figure(figsize=(12, 12))
-    gs = fig.add_gridspec(3, 2, height_ratios=[1.1, 1.0, 1.0], hspace=0.6, wspace=0.25)
+    fig = plt.figure(figsize=(12, 15))
+    gs = fig.add_gridspec(
+        3, 2, height_ratios=[1.0, 1.0, 1.0], hspace=0.55, wspace=0.25
+    )
 
     ax1 = fig.add_subplot(gs[0, :])
     ax1.plot(trend["day"], trend["total"], color="#b0bec5", lw=1, label="Daily total")
@@ -314,35 +306,34 @@ def render_trends(out_dir: Path, dpi: int):
     ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
     ax1.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
 
-    ax2 = fig.add_subplot(gs[1, :])
-    x = np.arange(7)
-    for i, group in enumerate(groups):
-        subset = weekday_df[weekday_df["group_label"] == group].set_index("weekday")
-        values = [subset.car.get(d, 0) for d in range(7)]
-        ax2.bar(x + (i - 0.5) * 0.38, values, 0.38, label=group,
-                color=PERIOD_COLOURS[i % len(PERIOD_COLOURS)])
-    ax2.set_xticks(x)
-    ax2.set_xticklabels(WEEKDAY_LABELS)
-    titled(ax2, "Weekday comparison — cars, grouped by comparison axis")
-    ax2.set_ylabel("Mean daily count")
-    ax2.legend(frameon=False)
-
-    for ax, matrix, title in (
-        (fig.add_subplot(gs[2, 0]), term_matrix, "Typical week — Term time, cars"),
-        (
-            fig.add_subplot(gs[2, 1]),
-            non_term_matrix,
-            "Typical week — Not term time, cars",
-        ),
-    ):
+    for i, (group, matrix) in enumerate(matrices[:2]):
+        ax = fig.add_subplot(gs[1, i])
         ax.imshow(matrix.values, aspect="auto", cmap="Blues")
         ax.set_yticks(range(7))
         ax.set_yticklabels(list(matrix.index))
         ax.set_xticks(range(0, 24, 3))
         ax.set_xticklabels(list(range(0, 24, 3)))
-        titled(ax, title)
+        titled(ax, f"Typical week — {group}, cars")
         ax.set_xlabel("Hour of day")
         ax.grid(False)
+
+    ax3 = fig.add_subplot(gs[2, 0])
+    bin_cols = list(speed.columns)
+    row = speed.iloc[0]
+    ax3.bar(np.arange(len(bin_cols)), [row[c] for c in bin_cols], 0.7,
+            color="#0b6e99")
+    ax3.set_xticks(np.arange(len(bin_cols)))
+    ax3.set_xticklabels(bin_cols, rotation=45, ha="right", fontsize=7)
+    titled(ax3, "Car speed distribution (mph)")
+    ax3.set_ylabel("Share (%)")
+
+    ax4 = fig.add_subplot(gs[2, 1])
+    ax4.plot(v85["day"], v85["v85"], color="#b0bec5", lw=1, label="Daily V85")
+    ax4.plot(v85["day"], v85["rolling"], color="#c46210", lw=2.4,
+             label="7-day average")
+    titled(ax4, "V85 trend (mph)")
+    ax4.set_ylabel("V85 (mph)")
+    ax4.legend(frameon=False)
 
     fig.suptitle("Telraam Traffic Explorer — Trends", x=0.02, ha="left",
                  fontsize=16, fontweight="bold")
@@ -411,51 +402,55 @@ def render_compare(out_dir: Path, dpi: int):
 
 
 def render_detail(out_dir: Path, dpi: int):
-    summary = compute_speed_summary(FRAME, unit="mph")
-    speed = compute_speed_distribution(FRAME, unit="mph")
-    trend = compute_speed_trend(FRAME, unit="mph")
+    instances = holiday_vs_term(CAL)
+    grouped = _term_grouped_assigned()
+    totals = compute_period_totals(grouped, MODALITIES, group_col="group_label")
+    split = compute_modal_split(grouped, MODALITIES, group_col="group_label")
 
-    fig = plt.figure(figsize=(12, 7))
-    gs = fig.add_gridspec(
-        2, 2, height_ratios=[1.0, 0.6], wspace=0.25, hspace=0.5
+    fig = plt.figure(figsize=(12, 9))
+    gs = fig.add_gridspec(3, 1, hspace=0.55)
+
+    ax1 = fig.add_subplot(gs[0])
+    ax1.axis("off")
+    titled(ax1, "Periods")
+    periods = describe_instances(instances)
+    rows = [["Period", "Type", "Year", "Start", "End", "Days"]]
+    for _, r in periods.iterrows():
+        rows.append([
+            r.Period, r.Type, r.Year or "", str(r.Start), str(r.End), int(r.Days),
+        ])
+    styled_table(
+        ax1, rows, [0.0, 0.06, 1.0, 0.62],
+        [0.22, 0.22, 0.12, 0.16, 0.16, 0.1],
     )
 
-    ax1 = fig.add_subplot(gs[0, 0])
-    bin_cols = list(speed.columns)
-    row = speed.iloc[0]
-    ax1.bar(np.arange(len(bin_cols)), [row[c] for c in bin_cols], 0.7,
-            color="#0b6e99")
-    ax1.set_xticks(np.arange(len(bin_cols)))
-    ax1.set_xticklabels(bin_cols, rotation=45, ha="right", fontsize=7)
-    titled(ax1, "Car speed distribution (mph) — overall")
-    ax1.set_ylabel("Share (%)")
+    ax2 = fig.add_subplot(gs[1])
+    ax2.axis("off")
+    titled(ax2, "Totals by group")
+    rows = [["Group", "Pedestrians", "Cycles", "Cars", "Heavy", "Total"]]
+    for _, r in totals.iterrows():
+        rows.append([
+            r.group_label, f"{r.pedestrian:,.0f}", f"{r.bike:,.0f}",
+            f"{r.car:,.0f}", f"{r.heavy:,.0f}", f"{r.total:,.0f}",
+        ])
+    styled_table(
+        ax2, rows, [0.0, 0.03, 1.0, 0.55],
+        [0.28, 0.16, 0.14, 0.14, 0.14, 0.14],
+    )
 
-    ax2 = fig.add_subplot(gs[0, 1])
-    ax2.plot(trend["day"], trend["v85"], color="#b0bec5", lw=1, label="Daily V85")
-    ax2.plot(trend["day"], trend["rolling"], color="#c46210", lw=2.4,
-             label="7-day average")
-    titled(ax2, "V85 trend (mph)")
-    ax2.set_ylabel("V85 (mph)")
-    ax2.legend(frameon=False)
-    ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=2))
-    ax2.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
-
-    ax3 = fig.add_subplot(gs[1, :])
+    ax3 = fig.add_subplot(gs[2])
     ax3.axis("off")
-    ax3.set_title("Speed summary (mph)", loc="left", fontsize=12,
-                  fontweight="bold", pad=10)
-    s = summary.iloc[0]
-    rows = [
-        ["V85 (mph)", "Est. mean (mph)", "Days"],
-        [
-            s.get("V85 (mph)", "—"),
-            s.get("Est. mean (mph)", "—"),
-            int(s.get("Days", 0)),
-        ],
-    ]
-    styled_table(ax3, rows, [0.0, 0.3, 1.0, 0.45], [0.34, 0.33, 0.33])
-    ax3.text(0.0, 0.1, "Only derived aggregates are exportable.\nRaw Telraam data is CC BY-NC 4.0.",
-             fontsize=9, color="#607d8b")
+    titled(ax3, "Modal split (%)")
+    rows = [["Group", *[m.title() for m in MODALITIES]]]
+    for _, r in split.iterrows():
+        rows.append([r.group_label, *[f"{r[m]:.1f}" for m in MODALITIES]])
+    styled_table(
+        ax3, rows, [0.0, 0.03, 1.0, 0.5],
+        [0.28, 0.18, 0.18, 0.18, 0.18],
+    )
+    ax3.text(0.0, -0.3, "Only derived aggregates are exportable.\n"
+             "Raw Telraam data is CC BY-NC 4.0.",
+             fontsize=9, color="#607d8b", transform=ax3.transAxes)
 
     fig.suptitle("Telraam Traffic Explorer — Detail", x=0.02, ha="left",
                  fontsize=16, fontweight="bold")

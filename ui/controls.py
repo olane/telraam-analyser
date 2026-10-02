@@ -196,7 +196,16 @@ def _exclusions() -> None:
                     st.warning("Provide a label and a valid date range.")
 
 
-def render_sidebar(config, calendar: Calendar) -> Controls:
+def _page_nav(pages) -> None:
+    """Page links, placed after the data controls so views follow loading."""
+    st.sidebar.subheader("View")
+    for page in pages:
+        st.sidebar.page_link(
+            page, label=page.title, icon=page.icon, use_container_width=True
+        )
+
+
+def render_sidebar(config, calendar: Calendar, pages) -> Controls:
     st.sidebar.title("Telraam Explorer")
 
     segment_id = st.sidebar.selectbox("Segment", config.segment_ids)
@@ -217,6 +226,8 @@ def render_sidebar(config, calendar: Calendar) -> Controls:
         st.sidebar.error(error)
     elif df is not None and not df.empty:
         st.sidebar.caption(f"{len(df):,} hourly rows loaded")
+
+    _page_nav(pages)
 
     comparison = _periods(calendar)
     instances = resolve(calendar, comparison)
