@@ -19,7 +19,6 @@ from cache import CacheManager
 from config import Config
 from domain.calendars import default_calendar
 from domain.models import (
-    ComparisonConfig,
     Exclusion,
     FilterSettings,
     PeriodInstance,
@@ -33,7 +32,6 @@ class Controls:
 
     segment_id: str
     filters: FilterSettings
-    comparison: ComparisonConfig
     exclusions: list[Exclusion]
     instances: list[PeriodInstance]
     df: pd.DataFrame = field(default_factory=pd.DataFrame)

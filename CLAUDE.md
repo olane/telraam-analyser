@@ -36,7 +36,10 @@ Requires `TELRAAM_API_KEY` and `TELRAAM_SEGMENT_IDS` — from `.env` locally or
 - `analysis.py`/`charts.py` logic is split into packages; keep `analysis/` pure
 - Periods are first-class: a `PeriodInstance` has a `PeriodKind`, ranges and an
   `academic_year`; `Calendar` groups them
-- Default comparison alignment is weekday (`Alignment.WEEKDAY`)
+- Download is decoupled from analysis: the sidebar picks a sensor + time range
+  and fetches the whole range (cache-filled, budget-guarded); a comparison
+  recipe (`ComparisonMode`) then only labels periods in the already-loaded data
+  and is shared by every view
 - Add academic years in `domain/calendars.py::CAMBRIDGE_YEARS`; year-on-year
   works automatically once a second year exists
 - API requests are chunked at 90-day boundaries with 1 req/sec rate limiting; a

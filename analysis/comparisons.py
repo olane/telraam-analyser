@@ -123,6 +123,13 @@ def resolve(
     """Turn a comparison configuration into concrete period instances."""
     mode = config.mode
 
+    if mode is ComparisonMode.ALL:
+        # Label every period so trend bands are complete.
+        instances = calendar.instances
+        if config.years:
+            instances = [i for i in instances if i.academic_year in config.years]
+        return list(instances)
+
     if mode is ComparisonMode.HOLIDAY_VS_TERM:
         return holiday_vs_term(calendar, config.years or None)
 
@@ -133,13 +140,6 @@ def resolve(
         kinds = config.kinds or ([config.kind] if config.kind else None)
         year = config.years[-1] if config.years else None
         return by_kind(calendar, kinds, year)
-
-    if mode is ComparisonMode.TREND:
-        # Label every period so trend bands are complete.
-        instances = calendar.instances
-        if config.years:
-            instances = [i for i in instances if i.academic_year in config.years]
-        return list(instances)
 
     if mode is ComparisonMode.BEFORE_AFTER:
         if config.cutover is None:

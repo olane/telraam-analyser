@@ -1,4 +1,9 @@
-"""Sidebar controls: segment, comparison recipe, filters, exclusions, load."""
+"""Sidebar: pick a sensor and time range, then the periods and filters.
+
+Downloading is decoupled from analysis: the time range fetches everything
+(cached, rate limits excepted), and the period recipe only decides which
+periods get labelled in the already-loaded data.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +15,6 @@ import streamlit as st
 from analysis import get_available_modalities, resolve
 from domain.models import (
     HOLIDAY_KINDS,
-    Alignment,
     Calendar,
     ComparisonConfig,
     ComparisonMode,
@@ -18,43 +22,68 @@ from domain.models import (
     FilterSettings,
 )
 from ui.components import attribution_footer
-from ui.state import Controls, ensure_data
+from ui.state import Controls, ensure_data, reset_data
 
 DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 DEFAULT_MODALITIES = ("pedestrian", "bike", "car", "heavy", "night")
 
+# Range presets in days. ``None`` means "everything since the API's earliest
+# data"; ``CUSTOM_RANGE`` asks for explicit dates.
+RANGE_PRESETS: dict[str, int | None] = {
+    "Last 30 days": 30,
+    "Last 90 days": 90,
+    "Last 6 months": 182,
+    "Last 12 months": 365,
+    "All time": None,
+    "Custom range": -1,
+}
+CUSTOM_RANGE = "Custom range"
+DEFAULT_RANGE = "Last 12 months"
 
-def _fetch_range(
-    instances, mode: ComparisonMode, earliest: date, today: date
-) -> tuple[date, date] | None:
-    if mode is ComparisonMode.TREND:
-        return earliest, today + timedelta(days=1)
-    starts = [i.start for i in instances if i.start]
-    ends = [i.end for i in instances if i.end]
-    if not starts or not ends:
-        return None
-    return min(starts), max(ends) + timedelta(days=1)
+
+def _time_range(config) -> tuple[date, date]:
+    """Sensor-independent date range to download, end exclusive."""
+    st.sidebar.subheader("Time period")
+    preset = st.sidebar.selectbox(
+        "Range",
+        list(RANGE_PRESETS),
+        index=list(RANGE_PRESETS).index(DEFAULT_RANGE),
+    )
+
+    if preset == CUSTOM_RANGE:
+        default_start = date.today() - timedelta(days=365)
+        col_start, col_end = st.sidebar.columns(2)
+        start = col_start.date_input("From", value=default_start, key="range_start")
+        end = col_end.date_input("To", value=date.today(), key="range_end")
+        return start, end + timedelta(days=1)
+
+    span = RANGE_PRESETS[preset]
+    end = date.today() + timedelta(days=1)
+    if span is None:
+        return config.earliest_data, end
+    return date.today() - timedelta(days=span), end
 
 
-def _comparison_config(calendar: Calendar) -> ComparisonConfig:
-    st.sidebar.subheader("Comparison")
+def _periods(calendar: Calendar) -> ComparisonConfig:
+    """Choose the shared set of periods the views should analyse."""
+    st.sidebar.subheader("Periods to analyse")
     mode = st.sidebar.selectbox(
-        "What to compare",
+        "Recipe",
         list(ComparisonMode),
         format_func=lambda m: m.human,
+        help="Which periods to label. Changing this does not re-download data.",
     )
     config = ComparisonConfig(mode=mode)
 
     available_years = calendar.years()
-    default_years = available_years
-    selected_years = st.sidebar.multiselect(
-        "Academic years", available_years, default=default_years
-    )
-    config.years = selected_years
-
     available_kinds = [k for k in HOLIDAY_KINDS if calendar.of_kind(k)]
 
-    if mode is ComparisonMode.YEAR_ON_YEAR:
+    if mode in (ComparisonMode.ALL, ComparisonMode.HOLIDAY_VS_TERM):
+        config.years = st.sidebar.multiselect(
+            "Academic years", available_years, default=available_years
+        )
+
+    elif mode is ComparisonMode.YEAR_ON_YEAR:
         if available_kinds:
             config.kind = st.sidebar.selectbox(
                 "Holiday", available_kinds, format_func=lambda k: k.human
@@ -75,15 +104,22 @@ def _comparison_config(calendar: Calendar) -> ComparisonConfig:
             default=available_kinds,
             format_func=lambda k: k.human,
         )
+        if available_years:
+            config.years = [
+                st.sidebar.selectbox(
+                    "Academic year",
+                    available_years,
+                    index=len(available_years) - 1,
+                )
+            ]
 
     elif mode is ComparisonMode.BEFORE_AFTER:
         default_cutover = date.today() - timedelta(days=90)
-        cutover = st.sidebar.date_input("Intervention date", value=default_cutover)
-        config.cutover = cutover
+        config.cutover = st.sidebar.date_input(
+            "Intervention date", value=default_cutover
+        )
         config.window_days = int(
-            st.sidebar.slider(
-                "Window (days each side)", 14, 180, 56, step=14
-            )
+            st.sidebar.slider("Window (days each side)", 14, 180, 56, step=14)
         )
         config.include_previous_year = st.sidebar.checkbox(
             "Also show the same window last year", value=False
@@ -94,18 +130,11 @@ def _comparison_config(calendar: Calendar) -> ComparisonConfig:
             "Periods", calendar.labels()
         )
 
-    with st.sidebar.expander("Advanced"):
-        config.alignment = st.selectbox(
-            "Alignment",
-            list(Alignment),
-            index=0,
-            format_func=lambda a: a.human,
-        )
-
     return config
 
 
-def _filters() -> None:
+def _filters(df) -> list[str]:
+    """Global filters applied by every view; returns selected modalities."""
     st.sidebar.subheader("Filters")
     st.session_state["_hour_range"] = st.sidebar.slider(
         "Hours of day", 0, 23, (0, 23)
@@ -113,6 +142,9 @@ def _filters() -> None:
     st.session_state["_day_labels"] = st.sidebar.multiselect(
         "Days of week", DAY_LABELS, default=DAY_LABELS
     )
+    available = get_available_modalities(df) if df is not None else []
+    defaults = [m for m in DEFAULT_MODALITIES if m in available]
+    return st.sidebar.multiselect("Modalities", available, default=defaults)
 
 
 def _exclusions() -> None:
@@ -140,35 +172,20 @@ def _exclusions() -> None:
                     st.warning("Provide a label and a valid date range.")
 
 
-def _modalities(df) -> list[str]:
-    available = get_available_modalities(df)
-    defaults = [m for m in DEFAULT_MODALITIES if m in available]
-    return st.sidebar.multiselect("Modalities", available, default=defaults)
-
-
 def render_sidebar(config, calendar: Calendar) -> Controls:
     st.sidebar.title("Telraam Explorer")
 
     segment_id = st.sidebar.selectbox("Segment", config.segment_ids)
 
-    comparison = _comparison_config(calendar)
-    instances = resolve(calendar, comparison)
-
-    _filters()
-    _exclusions()
+    start, end = _time_range(config)
 
     st.sidebar.subheader("Data")
-    fetch_range = _fetch_range(
-        instances, comparison.mode, config.earliest_data, date.today()
-    )
-
     df = None
     error: str | None = None
 
-    if fetch_range is None:
-        st.sidebar.info("Choose periods that cover at least one date.")
+    if start >= end:
+        st.sidebar.info("Choose a time range that covers at least one date.")
     else:
-        start, end = fetch_range
         with st.spinner("Loading traffic data…"):
             df, error = ensure_data(segment_id, start, end)
 
@@ -177,12 +194,14 @@ def render_sidebar(config, calendar: Calendar) -> Controls:
     elif df is not None and not df.empty:
         st.sidebar.caption(f"{len(df):,} hourly rows loaded")
         if st.sidebar.button("Clear session cache"):
-            from ui.state import reset_data
-
             reset_data()
             st.rerun()
 
-    selected_modalities = _modalities(df) if df is not None else []
+    comparison = _periods(calendar)
+    instances = resolve(calendar, comparison)
+
+    selected_modalities = _filters(df)
+    _exclusions()
 
     hour_range = st.session_state.get("_hour_range", (0, 23))
     day_labels = st.session_state.get("_day_labels", DAY_LABELS)
@@ -195,13 +214,11 @@ def render_sidebar(config, calendar: Calendar) -> Controls:
 
     attribution_footer(segment_id)
 
-    controls = Controls(
+    return Controls(
         segment_id=segment_id,
         filters=filters,
-        comparison=comparison,
         exclusions=list(st.session_state["exclusions"]),
         instances=instances,
         df=df if df is not None else pd.DataFrame(),
         error=error,
     )
-    return controls

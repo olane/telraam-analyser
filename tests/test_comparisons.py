@@ -12,7 +12,6 @@ from analysis.comparisons import (
 )
 from domain.calendars import default_calendar
 from domain.models import (
-    Alignment,
     ComparisonConfig,
     ComparisonMode,
     PeriodKind,
@@ -64,14 +63,26 @@ def test_latest_year():
     assert latest_year(default_calendar()) == "2025-26"
 
 
+def test_all_mode_filters_by_year():
+    calendar = default_calendar()
+    every = resolve(calendar, ComparisonConfig(mode=ComparisonMode.ALL))
+    assert len(every) == len(calendar.instances)
+
+    none = resolve(
+        calendar,
+        ComparisonConfig(mode=ComparisonMode.ALL, years=["1999-00"]),
+    )
+    assert none == []
+
+
 def test_resolve_dispatches_by_mode():
     calendar = default_calendar()
 
-    trend = resolve(
+    every = resolve(
         calendar,
-        ComparisonConfig(mode=ComparisonMode.TREND),
+        ComparisonConfig(mode=ComparisonMode.ALL),
     )
-    assert len(trend) == len(calendar.instances)
+    assert len(every) == len(calendar.instances)
 
     before_after = resolve(
         calendar,
@@ -79,7 +90,6 @@ def test_resolve_dispatches_by_mode():
             mode=ComparisonMode.BEFORE_AFTER,
             cutover=date(2025, 6, 1),
             window_days=14,
-            alignment=Alignment.WEEKDAY,
         ),
     )
     assert len(before_after) == 2

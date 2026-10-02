@@ -14,8 +14,6 @@ def _view_script() -> None:
     import views.overview as overview
     import views.trends as trends
     from domain.models import (
-        ComparisonConfig,
-        ComparisonMode,
         Exclusion,
         FilterSettings,
         PeriodInstance,
@@ -46,7 +44,6 @@ def _view_script() -> None:
         filters=FilterSettings(
             selected_modalities=["pedestrian", "bike", "car", "heavy"]
         ),
-        comparison=ComparisonConfig(mode=ComparisonMode.HOLIDAY_VS_TERM),
         exclusions=[Exclusion("Roadworks", ((date(2026, 1, 12), date(2026, 1, 16)),))],
         instances=instances,
         df=df,

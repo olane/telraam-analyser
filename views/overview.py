@@ -67,9 +67,10 @@ def render() -> None:
         else pd.Series(dtype=float)
     )
 
+    present = set(assigned["period_label"].dropna().unique())
     items: list[dict] = [
         {"label": "Hourly rows", "value": f"{len(controls.df):,}"},
-        {"label": "Periods", "value": str(len(controls.instances))},
+        {"label": "Periods", "value": str(len(present))},
     ]
 
     mean_daily = _mean_daily(assigned, modalities)
@@ -96,7 +97,8 @@ def render() -> None:
     kpi_row(items)
 
     st.subheader("Selected periods")
-    period_summary(controls.instances, caption="These are the periods being compared.")
+    shown = [i for i in controls.instances if i.label in present] or controls.instances
+    period_summary(shown, caption="These are the periods being compared.")
 
     if controls.exclusions:
         st.subheader("Excluded ranges")
