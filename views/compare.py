@@ -101,6 +101,8 @@ def _headline_comparison(means) -> None:
                     if group != baseline_label
                     else None
                 ),
+                "help": "Mean daily count (average per day) across the "
+                "selected modalities.",
             }
             for group, value in means.items()
         ]
@@ -126,6 +128,11 @@ def render() -> None:
         st.warning("Select at least one modality in the sidebar.")
         return
 
+    st.caption(
+        "Tip: choose which transport modes appear in the charts below with "
+        "the **Modalities** filter in the left sidebar."
+    )
+
     if controls.comparison.mode is ComparisonMode.BEFORE_AFTER:
         _intervention_context(controls, modalities)
 
@@ -134,7 +141,12 @@ def render() -> None:
         st.warning("No data matches the current filters or comparison.")
         return
 
-    _headline_comparison(period_mean_daily(df, modalities, group_col=GROUP_COL))
+    # Time-of-day bands cover different numbers of hours, so a single mean
+    # daily figure per band is not comparable and adds no value here.
+    if controls.comparison.mode is not ComparisonMode.TIME_OF_DAY:
+        _headline_comparison(
+            period_mean_daily(df, modalities, group_col=GROUP_COL)
+        )
 
     daily = compute_daily_totals(df, modalities, group_col=GROUP_COL)
     weekday_df = compute_weekday_totals(

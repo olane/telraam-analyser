@@ -6,14 +6,14 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from analysis.align import WEEKDAY_LABELS
-from charts.theme import period_colour_map
+from charts.theme import legend_below, period_colour_map
 
 
 def plot_weekday_comparison(
     weekday_df: pd.DataFrame,
     modality: str,
     value_label: str = "Mean daily count",
-    height: int = 400,
+    height: int = 440,
     group_col: str = "period_label",
 ) -> go.Figure:
     """Grouped bars: one bar per comparison group for each weekday."""
@@ -48,7 +48,7 @@ def plot_weekday_comparison(
         height=height,
         hovermode="x unified",
     )
-    return fig
+    return legend_below(fig)
 
 
 def plot_weekday_occurrence(

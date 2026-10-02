@@ -158,6 +158,22 @@ def test_weekday_comparison_groups_by_comparison_axis(make_df):
     assert {trace.name for trace in fig.data} == {"Term time", "School holidays"}
 
 
+def test_comparison_charts_put_legend_below_the_title(make_df):
+    """Multi-row legends must not overlap the title; anchor them below."""
+    df = _labelled(make_df)
+    daily = compute_daily_totals(df, MODALITIES)
+    weekday_df = compute_weekday_totals(daily, MODALITIES)
+    profile = compute_hourly_profile(df, MODALITIES)
+
+    for fig in (
+        plot_weekday_comparison(weekday_df, "car"),
+        plot_hourly_profile(profile, MODALITIES),
+    ):
+        assert fig.layout.legend.orientation == "h"
+        assert fig.layout.legend.y is not None
+        assert fig.layout.legend.y < 0
+
+
 def test_hourly_profile_has_period_x_modality_traces(make_df):
     df = _labelled(make_df)
     profile = compute_hourly_profile(df, MODALITIES)

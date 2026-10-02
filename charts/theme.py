@@ -71,6 +71,27 @@ def register_template() -> None:
     pio.templates.default = _TEMPLATE_NAME
 
 
+def legend_below(fig: go.Figure, margin_bottom: int = 120) -> go.Figure:
+    """Anchor a wrapping, horizontal legend beneath the plot.
+
+    Comparison charts carry several long group labels. The shared template
+    places the legend just above the plot, so once it wraps onto multiple rows
+    it collides with the title — especially in a narrow two-column layout.
+    Moving it below the axes keeps the title clear.
+    """
+    fig.update_layout(
+        legend=dict(
+            orientation="h",
+            yanchor="top",
+            y=-0.2,
+            x=0,
+            xanchor="left",
+        ),
+        margin=dict(b=margin_bottom),
+    )
+    return fig
+
+
 def period_colour_map(labels: list[str]) -> dict[str, str]:
     return {
         label: PERIOD_COLOURS[i % len(PERIOD_COLOURS)]

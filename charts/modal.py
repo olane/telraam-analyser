@@ -5,13 +5,13 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 
-from charts.theme import period_colour_map
+from charts.theme import legend_below, period_colour_map
 
 
 def plot_modal_split(
     split_df: pd.DataFrame,
     modalities: list[str],
-    height: int = 400,
+    height: int = 440,
     group_col: str = "period_label",
 ) -> go.Figure:
     """Grouped bars: one bar per comparison group for each modality share."""
@@ -43,4 +43,4 @@ def plot_modal_split(
         barmode="group",
         height=height,
     )
-    return fig
+    return legend_below(fig)
