@@ -1,7 +1,7 @@
 """Sidebar: pick a sensor and time range, then the periods and filters.
 
 Downloading is decoupled from analysis: the time range fetches everything
-(cached, rate limits excepted), and the period recipe only decides which
+(cached, rate limits excepted), and the grouping recipe only decides which
 periods get labelled in the already-loaded data.
 """
 
@@ -26,6 +26,8 @@ from domain.models import (
     Exclusion,
     FilterSettings,
     InterventionFilter,
+    PeriodInstance,
+    PeriodKind,
     base_of,
     is_directional,
     modality_label,
@@ -34,6 +36,12 @@ from ui.components import attribution_footer
 from ui.state import Controls, ensure_data
 
 DEFAULT_MODALITIES = ("pedestrian", "bike", "car", "heavy", "night")
+
+# Views that group the loaded frame into comparison buckets. Trends marks raw
+# calendar periods instead, so it gets a "Mark periods" control rather than
+# the comparison axis.
+GROUPING_PAGES = ("Overview", "Compare", "Detail")
+TRENDS_PAGE = "Trends"
 
 # Range presets in days. ``None`` means "everything since the API's earliest
 # data"; ``CUSTOM_RANGE`` asks for explicit dates.
@@ -49,11 +57,10 @@ CUSTOM_RANGE = "Custom range"
 DEFAULT_RANGE = "All time"
 
 
-def _time_range(config) -> tuple[date, date]:
+def _date_range(config) -> tuple[date, date]:
     """Sensor-independent date range to download, end exclusive."""
-    st.sidebar.subheader("Time period")
     preset = st.sidebar.selectbox(
-        "Range",
+        "Date range",
         list(RANGE_PRESETS),
         index=list(RANGE_PRESETS).index(DEFAULT_RANGE),
     )
@@ -72,11 +79,29 @@ def _time_range(config) -> tuple[date, date]:
     return date.today() - timedelta(days=span - 1), end
 
 
-def _periods(calendar: Calendar) -> ComparisonConfig:
-    """Choose the comparison axis and the calendar periods to label."""
-    st.sidebar.subheader("Comparison")
+def _load(segment_id: str, start: date, end: date) -> tuple[pd.DataFrame | None, str | None]:
+    """Fetch (or reuse) the rows for the selected range, reporting status."""
+    if start >= end:
+        st.sidebar.info("Choose a time range that covers at least one date.")
+        return None, None
+
+    with st.spinner("Loading traffic data…"):
+        df, error = ensure_data(segment_id, start, end)
+
+    if error:
+        st.sidebar.error(error)
+    elif df is not None and not df.empty:
+        st.sidebar.caption(f"{len(df):,} hourly rows loaded")
+    return df, error
+
+
+def _grouping(calendar: Calendar, page_title: str) -> ComparisonConfig:
+    """Choose the comparison axis used to group the comparison charts."""
+    if page_title not in GROUPING_PAGES:
+        return ComparisonConfig()
+
     mode = st.sidebar.selectbox(
-        "Compare by",
+        "Group charts by",
         list(ComparisonMode),
         format_func=lambda m: m.human,
         help="How rows are grouped in the comparison charts. Changing this "
@@ -137,16 +162,27 @@ def _periods(calendar: Calendar) -> ComparisonConfig:
     return config
 
 
+def _mark_periods(calendar: Calendar) -> list[PeriodInstance]:
+    """Choose which calendar periods are shaded on the trend charts.
+
+    Annotation is independent of the comparison axis, so Trends can keep
+    showing term boundaries and holiday bands while the other views group the
+    same data differently.
+    """
+    kinds = [k for k in PeriodKind if calendar.of_kind(k)]
+    chosen = st.sidebar.multiselect(
+        "Mark periods",
+        kinds,
+        default=kinds,
+        format_func=lambda k: k.human,
+        help="Calendar periods shaded on the trend charts. Independent of how "
+        "the other views group the data.",
+    )
+    return [i for i in calendar.instances if i.kind in chosen]
+
+
 def _filters(df) -> list[str]:
     """Global filters applied by every view; returns selected modalities."""
-    st.sidebar.subheader("Filters")
-    with st.sidebar.expander("Advanced filters"):
-        st.session_state["_hour_range"] = st.slider(
-            "Hours of day", 0, 23, (0, 23)
-        )
-        st.session_state["_day_labels"] = st.multiselect(
-            "Days of week", WEEKDAY_LABELS, default=WEEKDAY_LABELS
-        )
     available = get_available_modalities(df) if df is not None else []
     combined = [m for m in available if not is_directional(m)]
     variants = [m for m in available if is_directional(m)]
@@ -162,23 +198,32 @@ def _filters(df) -> list[str]:
         )
     )
 
-    if variants:
-        if st.sidebar.checkbox(
-            "Split by direction (left / right)",
-            value=False,
-            help="Use the S2 left/right variants. Selecting a direction "
-            "replaces its combined total so counts are not double counted.",
-        ):
-            selected_variants = st.sidebar.multiselect(
-                "Directional modalities",
-                variants,
-                default=[m for m in variants if base_of(m) in selected],
-                format_func=modality_label,
+    selected_variants: list[str] = []
+    with st.sidebar.expander("Advanced filters"):
+        st.session_state["_hour_range"] = st.slider(
+            "Hours of day", 0, 23, (0, 23)
+        )
+        st.session_state["_day_labels"] = st.multiselect(
+            "Days of week", WEEKDAY_LABELS, default=WEEKDAY_LABELS
+        )
+        if variants:
+            st.divider()
+            split = st.checkbox(
+                "Split by direction (left / right)",
+                value=False,
+                help="Use the S2 left/right variants. Selecting a direction "
+                "replaces its combined total so counts are not double counted.",
             )
-            selected += list(selected_variants)
+            if split:
+                selected_variants = st.multiselect(
+                    "Directional modalities",
+                    variants,
+                    default=[m for m in variants if base_of(m) in selected],
+                    format_func=modality_label,
+                )
 
     # Never sum a combined mode and its direction split together.
-    return dedupe_modalities(selected)
+    return dedupe_modalities(selected + list(selected_variants))
 
 
 def _exclusions() -> None:
@@ -215,32 +260,27 @@ def _page_nav(pages) -> None:
         )
 
 
-def render_sidebar(config, calendar: Calendar, pages) -> Controls:
+def render_sidebar(config, calendar: Calendar, pages, current_page) -> Controls:
     st.sidebar.title("Telraam Explorer")
+    page_title = getattr(current_page, "title", "")
 
-    segment_id = st.sidebar.selectbox("Segment", config.segment_ids)
-
-    start, end = _time_range(config)
-
+    # -- Data: sensor + download range -----------------------------------
     st.sidebar.subheader("Data")
-    df = None
-    error: str | None = None
+    segment_id = st.sidebar.selectbox("Segment", config.segment_ids)
+    start, end = _date_range(config)
+    df, error = _load(segment_id, start, end)
 
-    if start >= end:
-        st.sidebar.info("Choose a time range that covers at least one date.")
-    else:
-        with st.spinner("Loading traffic data…"):
-            df, error = ensure_data(segment_id, start, end)
-
-    if error:
-        st.sidebar.error(error)
-    elif df is not None and not df.empty:
-        st.sidebar.caption(f"{len(df):,} hourly rows loaded")
-
+    # -- View: which page to read ----------------------------------------
     _page_nav(pages)
 
-    comparison = _periods(calendar)
-    instances = resolve(calendar, comparison)
+    # -- View settings: how the loaded data is interpreted ----------------
+    st.sidebar.subheader("View settings")
+    comparison = _grouping(calendar, page_title)
+    instances = (
+        _mark_periods(calendar)
+        if page_title == TRENDS_PAGE
+        else resolve(calendar, comparison)
+    )
 
     selected_modalities = _filters(df)
     _exclusions()

@@ -62,9 +62,10 @@ pages = [
 ]
 
 # Navigation is hidden and re-rendered as links inside the sidebar controls,
-# below the data-loading section, so views read as "after loading data".
+# so the page can be chosen without leaving the sidebar. The selected page is
+# passed in so controls that only apply to some views can be hidden.
 navigation = st.navigation(pages, position="hidden")
 st.session_state["controls"] = render_sidebar(
-    config, st.session_state["calendar"], pages
+    config, st.session_state["calendar"], pages, navigation
 )
 navigation.run()
