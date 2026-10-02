@@ -40,6 +40,7 @@ from analysis.filters import (
     mark_exclusions,
 )
 from analysis.grouping import add_comparison_group, term_status
+from analysis.pipeline import prepare_frame
 from analysis.trends import (
     compute_daily_trend,
     daily_total_series,
