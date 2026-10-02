@@ -135,9 +135,3 @@ def prepared_df(keep_only_assigned: bool = False) -> pd.DataFrame:
     if keep_only_assigned:
         df = df[df["period_label"].notna()].copy()
     return df
-
-
-def reset_data() -> None:
-    ss = st.session_state
-    ss["_data"] = None
-    ss["_data_segment"] = None

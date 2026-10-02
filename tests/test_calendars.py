@@ -9,9 +9,9 @@ from domain.models import PeriodKind
 def test_default_calendar_has_expected_instances():
     calendar = default_calendar()
     assert calendar.name == "Cambridge"
-    assert calendar.years() == ["2025-26"]
-    assert len(calendar.of_kind(PeriodKind.TERM)) == 6
-    assert len(calendar.of_kind(PeriodKind.CHRISTMAS)) == 1
+    assert calendar.years() == ["2025-26", "2026-27"]
+    assert len(calendar.of_kind(PeriodKind.TERM)) == 12
+    assert len(calendar.of_kind(PeriodKind.CHRISTMAS)) == 2
 
 
 def test_labels_are_unique():
@@ -25,6 +25,15 @@ def test_christmas_dates_and_anchor():
     assert christmas.end == date(2026, 1, 2)
     assert christmas.anchor == date(2025, 12, 25)
     assert christmas.n_days == 12
+
+
+def test_summer_holiday_is_present():
+    summer = default_calendar().of_kind(PeriodKind.SUMMER)
+    assert {i.academic_year for i in summer} == {"2025-26", "2026-27"}
+    first = next(i for i in summer if i.academic_year == "2025-26")
+    assert first.start == date(2026, 7, 21)
+    assert first.end == date(2026, 8, 31)
+    assert first.kind.is_holiday
 
 
 def test_calendar_can_be_filtered_by_year():
