@@ -110,8 +110,7 @@ class CacheManager:
             payload = json.loads(path.read_text())
             first = payload.get("first_data")
             return SegmentInfo(
-                first_data=date.fromisoformat(first) if first else None,
-                timezone=payload.get("timezone"),
+                first_data=date.fromisoformat(first) if first else None
             )
         except (OSError, ValueError, TypeError, AttributeError):
             return None
@@ -119,7 +118,6 @@ class CacheManager:
     def _save_segment_info(self, segment_id: str, info: SegmentInfo) -> None:
         payload = {
             "first_data": info.first_data.isoformat() if info.first_data else None,
-            "timezone": info.timezone,
         }
         try:
             self._segment_info_path(segment_id).write_text(json.dumps(payload))
@@ -186,7 +184,7 @@ class CacheManager:
         gaps = _find_gaps(coverage, start, end)
 
         if not gaps:
-            return _slice(cached, start, end)
+            return slice_frame(cached, start, end)
 
         estimated = sum(chunk_count(g[0], g[1]) for g in gaps)
         if self.budget is not None and not self.budget.try_reserve(estimated):
@@ -217,10 +215,10 @@ class CacheManager:
             merged = cached if cached is not None else pd.DataFrame()
 
         self._save_coverage(path, list(coverage) + list(gaps))
-        return _slice(merged, start, end)
+        return slice_frame(merged, start, end)
 
 
-def _slice(df: pd.DataFrame | None, start: date, end: date) -> pd.DataFrame:
+def slice_frame(df: pd.DataFrame | None, start: date, end: date) -> pd.DataFrame:
     if df is None or df.empty:
         return pd.DataFrame()
     start_ts = pd.Timestamp(start, tz="UTC")

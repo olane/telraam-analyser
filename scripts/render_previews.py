@@ -40,6 +40,7 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from analysis import (  # noqa: E402
+    WEEKDAY_LABELS,
     add_comparison_group,
     compute_daily_totals,
     compute_daily_trend,
@@ -88,7 +89,6 @@ EXCLUSIONS = [
         ((pd.Timestamp("2025-10-13").date(), pd.Timestamp("2025-10-17").date()),),
     )
 ]
-WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
 
 
 # ---------------------------------------------------------------------------

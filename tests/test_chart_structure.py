@@ -20,7 +20,6 @@ from analysis.aggregates import (
 )
 from analysis.align import (
     compute_typical_week,
-    compute_weekday_occurrence_totals,
     compute_weekday_totals,
     weekday_hour_matrix,
 )
@@ -35,7 +34,6 @@ from charts import (
     plot_speed_trend,
     plot_typical_week,
     plot_weekday_comparison,
-    plot_weekday_occurrence,
 )
 from domain.calendars import default_calendar
 from domain.models import Exclusion, PeriodInstance, PeriodKind
@@ -199,17 +197,6 @@ def test_typical_week_heatmap_shape(make_df):
     assert len(fig.data) == 1
     assert len(fig.data[0].z) == 7
     assert len(fig.data[0].z[0]) == 24
-
-
-def test_weekday_occurrence_traces_per_group(make_df):
-    df = make_df("2025-12-15", "2026-02-28 23:00")
-    daily = compute_daily_totals(keep_assigned(label_periods(df, _two_periods())), MODALITIES)
-    occurrence = compute_weekday_occurrence_totals(daily, ["car"])
-    fig = plot_weekday_occurrence(occurrence, "car")
-    # One trace per (period, weekday): two periods, seven weekdays each.
-    assert len(fig.data) == 14
-    assert {trace.legendgroup for trace in fig.data} == {"Christmas", "February half term"}
-    assert all(trace.name for trace in fig.data)
 
 
 def test_speed_distribution_has_a_single_overall_trace():

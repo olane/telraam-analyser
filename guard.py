@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import json
 import threading
-from datetime import date
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -28,7 +28,7 @@ class DailyRequestBudget:
         self._lock = threading.Lock()
 
     def _today(self) -> str:
-        return date.today().isoformat()
+        return datetime.now(timezone.utc).date().isoformat()
 
     def _read(self) -> dict:
         try:

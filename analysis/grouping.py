@@ -14,7 +14,6 @@ from domain.models import (
     EXCLUDED_LABEL,
     HOLIDAY_KINDS,
     HOLIDAY_LABEL,
-    NOT_TERM_LABEL,
     TERM_LABEL,
     TIME_OF_DAY_BANDS,
     WEEKDAY_LABEL,
@@ -45,16 +44,6 @@ def _holiday_vs_term(df: pd.DataFrame) -> pd.Categorical:
         df["period_kind"].map(classify),
         categories=[TERM_LABEL, HOLIDAY_LABEL],
         ordered=True,
-    )
-
-
-def term_status(df: pd.DataFrame) -> pd.Categorical:
-    """Label every row as term time or not, from the period kind."""
-    labels = df["period_kind"].map(
-        lambda kind: TERM_LABEL if kind == PeriodKind.TERM.value else NOT_TERM_LABEL
-    )
-    return pd.Categorical(
-        labels, categories=[TERM_LABEL, NOT_TERM_LABEL], ordered=True
     )
 
 

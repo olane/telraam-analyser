@@ -7,6 +7,7 @@ import streamlit as st
 
 from analysis import (
     compute_period_totals,
+    daily_total_series,
     period_mean_daily,
 )
 from ui.components import format_pct_change, kpi_row, period_summary
@@ -17,10 +18,10 @@ from ui.theme import page_header
 def _mean_daily(df: pd.DataFrame, modalities: list[str]) -> float | None:
     if df.empty or not modalities:
         return None
-    daily = df.groupby("day")[modalities].sum()
-    if daily.empty:
+    total = daily_total_series(df, modalities)
+    if total.empty:
         return None
-    return float(daily.sum(axis=1).mean())
+    return float(total.mean())
 
 
 def render() -> None:

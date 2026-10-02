@@ -3,7 +3,7 @@
 The default comparison method is *weekday alignment*: like weekdays are
 compared with like. A Mon–Fri half term has one of each weekday, while a
 two-week Christmas holiday has two — so the primary output is the mean per
-weekday, with an optional occurrence breakdown for long periods.
+weekday.
 """
 
 from __future__ import annotations
@@ -24,25 +24,6 @@ def compute_weekday_totals(
     df["weekday"] = pd.to_datetime(df["day"]).dt.dayofweek
     return (
         df.groupby([group_col, "weekday"], observed=True)[modalities]
-        .mean()
-        .reset_index()
-    )
-
-
-def compute_weekday_occurrence_totals(
-    daily_df: pd.DataFrame, modalities: list[str], group_col: str = "period_label"
-) -> pd.DataFrame:
-    """Mean daily total per (group, weekday, occurrence within group)."""
-    df = daily_df.copy()
-    df["weekday"] = pd.to_datetime(df["day"]).dt.dayofweek
-    df = df.sort_values([group_col, "weekday", "day"])
-    df["weekday_occurrence"] = (
-        df.groupby([group_col, "weekday"], observed=True).cumcount() + 1
-    )
-    return (
-        df.groupby(
-            [group_col, "weekday", "weekday_occurrence"], observed=True
-        )[modalities]
         .mean()
         .reset_index()
     )

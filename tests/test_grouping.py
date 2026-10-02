@@ -5,12 +5,11 @@ from datetime import date
 from analysis.aggregates import compute_daily_totals
 from analysis.align import compute_weekday_totals
 from analysis.filters import label_periods, mark_exclusions
-from analysis.grouping import add_comparison_group, term_status
+from analysis.grouping import add_comparison_group
 from domain.models import (
     BASELINE_LABEL,
     EXCLUDED_LABEL,
     HOLIDAY_LABEL,
-    NOT_TERM_LABEL,
     TERM_LABEL,
     TIME_OF_DAY_BANDS,
     WEEKDAY_LABEL,
@@ -92,12 +91,6 @@ def test_roadworks_axis_splits_baseline_and_excluded(make_df):
         BASELINE_LABEL,
         EXCLUDED_LABEL,
     }
-
-
-def test_term_status_labels_non_term(make_df):
-    df = _labelled(make_df)
-    status = term_status(df)
-    assert set(status.dropna().unique()) == {TERM_LABEL, NOT_TERM_LABEL}
 
 
 def test_group_col_preserves_category_order(make_df):

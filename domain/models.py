@@ -1,9 +1,9 @@
 """Domain model for Telraam traffic comparison.
 
 Typed, calendar-aware periods replace the old flat ``PeriodGroup``: every
-period now has a *kind* (Christmas holiday, half term, term time, ...), an
-optional academic year, and an optional anchor date. This is what makes
-"compare similar periods" and year-on-year comparisons possible.
+period now has a *kind* (Christmas holiday, half term, term time, ...) and an
+optional academic year. This is what makes "compare similar periods" and
+year-on-year comparisons possible.
 """
 
 from __future__ import annotations
@@ -44,10 +44,6 @@ class PeriodKind(str, Enum):
     def is_term(self) -> bool:
         return self is PeriodKind.TERM
 
-    @property
-    def is_intervention(self) -> bool:
-        return self in (PeriodKind.INTERVENTION_BEFORE, PeriodKind.INTERVENTION_AFTER)
-
 
 _KIND_LABELS: dict[PeriodKind, str] = {
     PeriodKind.TERM: "Term time",
@@ -73,17 +69,6 @@ HOLIDAY_KINDS: tuple[PeriodKind, ...] = (
     PeriodKind.HOLIDAY,
 )
 
-# Order in which school holidays occur within an academic year.
-HOLIDAY_ORDER: dict[PeriodKind, int] = {
-    PeriodKind.AUTUMN_HALF: 0,
-    PeriodKind.CHRISTMAS: 1,
-    PeriodKind.FEB_HALF: 2,
-    PeriodKind.EASTER: 3,
-    PeriodKind.MAY_HALF: 4,
-    PeriodKind.SUMMER: 5,
-}
-
-
 # ---------------------------------------------------------------------------
 # Periods and calendars
 # ---------------------------------------------------------------------------
@@ -100,7 +85,6 @@ class PeriodInstance:
     kind: PeriodKind
     ranges: tuple[DateRange, ...] = ()
     academic_year: str | None = None
-    anchor: date | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -284,32 +268,11 @@ class SegmentInfo:
     """A segment's known history window, from the segment metadata endpoint."""
 
     first_data: date | None = None
-    last_data: date | None = None
-    timezone: str | None = None
 
 
 # ---------------------------------------------------------------------------
 # Modalities
 # ---------------------------------------------------------------------------
-
-CLASSIC_MODALITIES = ["pedestrian", "bike", "car", "heavy"]
-
-S2_MODALITIES = [
-    "pedestrian",
-    "bike",
-    "car",
-    "heavy",
-    "pedestrian_lft",
-    "pedestrian_rgt",
-    "bike_lft",
-    "bike_rgt",
-    "car_lft",
-    "car_rgt",
-    "heavy_lft",
-    "heavy_rgt",
-    "night_lft",
-    "night_rgt",
-]
 
 # Column order used whenever modalities are listed in the UI.
 MODALITY_ORDER = [
@@ -364,9 +327,3 @@ def modality_label(modality: str) -> str:
         side = "left" if modality.endswith("_lft") else "right"
         return f"{modality_label(base_of(modality))} ({side})"
     return modality.replace("_", " ").title()
-
-# Speed histogram bucket columns (V85 distribution)
-SPEED_BUCKETS = [
-    "car_speed_hist_0to70plus",
-    "car_speed_hist_0to120plus",
-]

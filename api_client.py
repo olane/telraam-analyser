@@ -64,11 +64,11 @@ class TelraamClient:
         return report
 
     def fetch_segment_info(self, segment_id: str) -> SegmentInfo:
-        """Return a segment's known history window via one metadata request.
+        """Return a segment's first data date via one metadata request.
 
-        ``/v1/segments/id/{id}`` reports the first and last data packages for a
-        segment, which lets the cache avoid requesting years of empty data
-        before the sensor was ever installed.
+        ``/v1/segments/id/{id}`` reports the first data package for a segment,
+        which lets the cache avoid requesting years of empty data before the
+        sensor was ever installed.
         """
         self._rate_limit()
         resp = self._session.get(f"{API_BASE}/segments/id/{segment_id}")
@@ -82,23 +82,13 @@ class TelraamClient:
         data = resp.json()
         features = data.get("features") if isinstance(data, dict) else []
         firsts: list[date] = []
-        lasts: list[date] = []
-        timezone: str | None = None
         for feature in features:
             props = feature.get("properties") or {}
             first = _parse_iso_date(props.get("first_data_package"))
-            last = _parse_iso_date(props.get("last_data_package"))
             if first:
                 firsts.append(first)
-            if last:
-                lasts.append(last)
-            timezone = timezone or props.get("timezone")
 
-        return SegmentInfo(
-            first_data=min(firsts) if firsts else None,
-            last_data=max(lasts) if lasts else None,
-            timezone=timezone,
-        )
+        return SegmentInfo(first_data=min(firsts) if firsts else None)
 
     def fetch_traffic(
         self,

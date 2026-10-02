@@ -21,7 +21,7 @@ def plot_speed_distribution(
 
         return empty_figure()
 
-    bin_cols = [c for c in speed_df.columns if c != "period_label"]
+    bin_cols = list(speed_df.columns)
     row = speed_df.iloc[0]
 
     fig = go.Figure(

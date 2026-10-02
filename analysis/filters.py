@@ -105,8 +105,8 @@ def mark_exclusions(
     """Flag excluded rows without dropping them.
 
     The roadworks comparison axis needs to keep excluded rows so it can bucket
-    them against the baseline; every other axis drops them via
-    :func:`drop_exclusions`.
+    them against the baseline; every other axis drops them in
+    :func:`analysis.pipeline.prepare_frame`.
     """
     df = df.copy()
     df["is_excluded"] = (
@@ -115,17 +115,6 @@ def mark_exclusions(
         else False
     )
     return df
-
-
-def drop_exclusions(
-    df: pd.DataFrame, exclusions: list[Exclusion]
-) -> pd.DataFrame:
-    """Remove any excluded date ranges (roadworks, closures, ...)."""
-    if not exclusions:
-        return df
-    if "is_excluded" in df.columns:
-        return df[~df["is_excluded"].astype(bool)]
-    return df[~_exclusion_mask(df.index, exclusions)]
 
 
 # ---------------------------------------------------------------------------
@@ -161,21 +150,3 @@ def keep_assigned(df: pd.DataFrame) -> pd.DataFrame:
     if "period_label" not in df.columns:
         raise KeyError("label_periods() must be called before keep_assigned()")
     return df[df["period_label"].notna()].copy()
-
-
-def keep_labels(df: pd.DataFrame, labels: list[str]) -> pd.DataFrame:
-    return df[df["period_label"].isin(labels)].copy()
-
-
-def add_weekday_occurrence(df: pd.DataFrame) -> pd.DataFrame:
-    """Add ``weekday_occurrence`` (1st/2nd/... Monday within each period)."""
-    if "period_label" not in df.columns:
-        raise KeyError("label_periods() must be called first")
-    df = df.copy()
-    day_weekday = df[["period_label", "day", "weekday"]].drop_duplicates()
-    day_weekday["weekday_occurrence"] = (
-        day_weekday.groupby(["period_label", "weekday"]).cumcount() + 1
-    )
-    return df.merge(
-        day_weekday, on=["period_label", "day", "weekday"], how="left"
-    )

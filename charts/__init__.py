@@ -15,7 +15,7 @@ from charts.theme import (
     register_template,
 )
 from charts.trend import plot_daily_trend, plot_weekday_adjusted_trend
-from charts.weekday import plot_weekday_comparison, plot_weekday_occurrence
+from charts.weekday import plot_weekday_comparison
 
 __all__ = [
     "KIND_COLOURS",
@@ -33,6 +33,5 @@ __all__ = [
     "plot_typical_week",
     "plot_weekday_adjusted_trend",
     "plot_weekday_comparison",
-    "plot_weekday_occurrence",
     "register_template",
 ]

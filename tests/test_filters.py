@@ -5,14 +5,12 @@ from datetime import date
 import pandas as pd
 
 from analysis.filters import (
-    add_weekday_occurrence,
-    drop_exclusions,
     filter_days_of_week,
     filter_time_of_day,
     keep_assigned,
     label_periods,
 )
-from domain.models import Exclusion, PeriodInstance, PeriodKind
+from domain.models import PeriodInstance, PeriodKind
 
 
 def _christmas() -> PeriodInstance:
@@ -44,14 +42,6 @@ def test_keep_assigned_drops_unlabelled(make_df):
     assert labelled.index.max().date() <= date(2026, 1, 2)
 
 
-def test_drop_exclusions_removes_range(make_df):
-    df = make_df("2025-12-20", "2026-01-05 23:00")
-    exclusion = Exclusion("Roadworks", ((date(2025, 12, 24), date(2025, 12, 25)),))
-    filtered = drop_exclusions(df, [exclusion])
-    assert filtered.loc["2025-12-24"].empty
-    assert filtered.loc["2025-12-23"].shape[0] == 24
-
-
 def test_time_and_day_filters(make_df):
     df = make_df("2026-02-16", "2026-02-22 23:00")
     daytime = filter_time_of_day(df, 7, 9)
@@ -59,13 +49,3 @@ def test_time_and_day_filters(make_df):
 
     weekdays = filter_days_of_week(df, [0, 1, 2, 3, 4])
     assert set(weekdays["weekday"].unique()) <= {0, 1, 2, 3, 4}
-
-
-def test_weekday_occurrence_counts_second_monday(make_df):
-    df = make_df("2025-12-22", "2026-01-02 23:00")
-    labelled = label_periods(df, [_christmas()])
-    with_occurrence = add_weekday_occurrence(labelled)
-
-    mondays = with_occurrence[with_occurrence["weekday"] == 0]
-    occurrences = sorted(mondays["weekday_occurrence"].unique())
-    assert occurrences == [1, 2]

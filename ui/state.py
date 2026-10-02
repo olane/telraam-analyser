@@ -10,7 +10,7 @@ import streamlit as st
 
 from analysis import prepare_frame
 from api_client import TelraamClient
-from cache import CacheManager
+from cache import CacheManager, slice_frame
 from config import Config
 from domain.calendars import default_calendar
 from domain.models import (
@@ -79,7 +79,7 @@ def ensure_data(
         and ss["_data_start"] <= start
         and ss["_data_end"] >= end
     ):
-        return _slice(cached, start, end), None
+        return slice_frame(cached, start, end), None
 
     try:
         df = ss["cache_manager"].get_or_fetch(
@@ -101,14 +101,6 @@ def ensure_data(
     ss["_data_start"] = start
     ss["_data_end"] = end
     return df, None
-
-
-def _slice(df: pd.DataFrame, start: date, end: date) -> pd.DataFrame:
-    if df is None or df.empty:
-        return pd.DataFrame()
-    return df.loc[
-        pd.Timestamp(start, tz="UTC") : pd.Timestamp(end, tz="UTC")
-    ]
 
 
 def get_controls() -> Controls:

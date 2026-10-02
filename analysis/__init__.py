@@ -13,39 +13,26 @@ from analysis.aggregates import (
 from analysis.align import (
     WEEKDAY_LABELS,
     compute_typical_week,
-    compute_weekday_occurrence_totals,
     compute_weekday_totals,
     weekday_hour_matrix,
 )
 from analysis.comparisons import (
-    aggregate,
-    build_before_after,
     describe_instances,
     holiday_vs_term,
-    latest_year,
     resolve,
-    year_on_year,
 )
 from analysis.filters import (
     add_time_columns,
-    add_weekday_occurrence,
     dedupe_modalities,
-    drop_exclusions,
-    filter_days_of_week,
-    filter_time_of_day,
     get_available_modalities,
-    get_speed_hist_columns,
     keep_assigned,
-    keep_labels,
     label_periods,
-    mark_exclusions,
 )
-from analysis.grouping import add_comparison_group, term_status
+from analysis.grouping import add_comparison_group
 from analysis.pipeline import prepare_frame
 from analysis.trends import (
     compute_daily_trend,
     daily_total_series,
-    rolling_mean,
     weekday_adjusted_trend,
 )
 
@@ -53,9 +40,6 @@ __all__ = [
     "WEEKDAY_LABELS",
     "add_comparison_group",
     "add_time_columns",
-    "add_weekday_occurrence",
-    "aggregate",
-    "build_before_after",
     "compute_daily_totals",
     "compute_daily_trend",
     "compute_hourly_profile",
@@ -65,28 +49,17 @@ __all__ = [
     "compute_speed_summary",
     "compute_speed_trend",
     "compute_typical_week",
-    "compute_weekday_occurrence_totals",
     "compute_weekday_totals",
     "daily_total_series",
     "dedupe_modalities",
     "describe_instances",
-    "drop_exclusions",
-    "filter_days_of_week",
-    "filter_time_of_day",
     "get_available_modalities",
-    "get_speed_hist_columns",
     "holiday_vs_term",
     "keep_assigned",
-    "keep_labels",
     "label_periods",
-    "latest_year",
-    "mark_exclusions",
     "period_mean_daily",
     "prepare_frame",
     "resolve",
-    "rolling_mean",
-    "term_status",
     "weekday_adjusted_trend",
     "weekday_hour_matrix",
-    "year_on_year",
 ]

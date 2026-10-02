@@ -11,7 +11,6 @@ from analysis.aggregates import (
 )
 from analysis.align import (
     compute_typical_week,
-    compute_weekday_occurrence_totals,
     compute_weekday_totals,
     weekday_hour_matrix,
 )
@@ -26,7 +25,6 @@ from charts import (
     plot_typical_week,
     plot_weekday_adjusted_trend,
     plot_weekday_comparison,
-    plot_weekday_occurrence,
 )
 from charts.theme import register_template
 from domain.models import Exclusion, PeriodInstance, PeriodKind
@@ -66,7 +64,6 @@ def test_all_charts_render(make_df):
 
     daily = compute_daily_totals(df, MODALITIES)
     weekday_df = compute_weekday_totals(daily, MODALITIES)
-    occurrence = compute_weekday_occurrence_totals(daily, ["car"])
     typical = compute_typical_week(df, MODALITIES)
     matrix = weekday_hour_matrix(typical, "Christmas", "car")
 
@@ -85,7 +82,6 @@ def test_all_charts_render(make_df):
 
     _assert_renders(plot_hourly_profile(compute_hourly_profile(df, MODALITIES), MODALITIES))
     _assert_renders(plot_weekday_comparison(weekday_df, "car"))
-    _assert_renders(plot_weekday_occurrence(occurrence, "car"))
     _assert_renders(plot_typical_week(matrix))
     _assert_renders(plot_modal_split(compute_modal_split(df, MODALITIES), MODALITIES))
     _assert_renders(plot_speed_distribution(speed_df))
