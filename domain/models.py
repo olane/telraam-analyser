@@ -339,19 +339,6 @@ def base_of(modality: str) -> str:
     return base if sep else modality
 
 
-def group_of(modality: str) -> str | None:
-    """Return the aggregate group a modality belongs to, if any.
-
-    ``car``, ``heavy``, ``night`` and their directional variants all belong to
-    ``motorised``; other modalities belong to no group.
-    """
-    base = base_of(modality)
-    for group, weights in MODALITY_GROUPS.items():
-        if base in weights:
-            return group
-    return None
-
-
 def modality_label(modality: str) -> str:
     """Human-readable name for a modality column."""
     if modality in MODALITY_LABELS:

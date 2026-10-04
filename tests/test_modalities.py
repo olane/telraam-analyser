@@ -9,7 +9,7 @@ from analysis.filters import (
     get_available_groups,
     get_available_modalities,
 )
-from domain.models import base_of, group_of, is_directional, modality_label
+from domain.models import base_of, is_directional, modality_label
 
 
 def test_is_directional_flags_split_variants():
@@ -23,15 +23,6 @@ def test_base_of_strips_direction_suffix():
     assert base_of("car_lft") == "car"
     assert base_of("night_rgt") == "night"
     assert base_of("car") == "car"
-
-
-def test_group_of_maps_motorised_components():
-    assert group_of("car") == "motorised"
-    assert group_of("heavy") == "motorised"
-    assert group_of("night") == "motorised"
-    assert group_of("night_lft") == "motorised"
-    assert group_of("pedestrian") is None
-    assert group_of("motorised") is None
 
 
 def test_modality_labels_are_human_readable():
@@ -113,13 +104,3 @@ def test_dedupe_handles_night_split():
         "night_lft",
         "night_rgt",
     ]
-
-
-def test_dedupe_group_supersedes_components():
-    assert dedupe_modalities(
-        ["pedestrian", "motorised", "car", "heavy", "night"]
-    ) == ["pedestrian", "motorised"]
-
-
-def test_dedupe_group_supersedes_directional_components():
-    assert dedupe_modalities(["motorised", "car_lft", "car_rgt"]) == ["motorised"]

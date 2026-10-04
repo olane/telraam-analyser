@@ -9,7 +9,6 @@ from domain.models import (
     MODALITY_ORDER,
     Exclusion,
     PeriodInstance,
-    group_of,
     is_directional,
 )
 
@@ -60,18 +59,14 @@ def add_derived_modalities(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def dedupe_modalities(modalities: list[str]) -> list[str]:
-    """Drop modalities that would be counted twice when summed.
+    """Drop a combined modality when its directional variants are selected.
 
-    A combined modality is dropped when its directional variants are selected.
-    An aggregate group (``motorised``) supersedes its component modalities and
-    their directional variants.
+    An aggregate group is never mixed with its components (groups live in
+    per-view selectors), so only the left/right double count is handled here.
     """
     selected = set(modalities)
-    groups_selected = {m for m in selected if m in MODALITY_GROUPS}
     out: list[str] = []
     for modality in modalities:
-        if any(group_of(modality) == group for group in groups_selected):
-            continue
         if not is_directional(modality) and (
             f"{modality}_lft" in selected or f"{modality}_rgt" in selected
         ):
