@@ -3,7 +3,6 @@ from __future__ import annotations
 import pandas as pd
 
 from analysis.filters import (
-    MODALITY_GROUPS,
     add_derived_modalities,
     dedupe_modalities,
     get_available_groups,
@@ -60,7 +59,7 @@ def test_get_available_groups_offers_motorised_when_parts_present():
     assert get_available_groups(df) == ["motorised"]
 
 
-def test_add_derived_modalities_scales_night_by_default_share():
+def test_add_derived_modalities_uses_default_night_share():
     df = pd.DataFrame(
         {
             "car": [1.0, 2.0],
@@ -69,18 +68,13 @@ def test_add_derived_modalities_scales_night_by_default_share():
         }
     )
     out = add_derived_modalities(df)
-    # car + heavy + night x 0.8 (80% motorised).
-    assert list(out["motorised"]) == [91.0, 182.0]
+    # car + heavy + night x 0.85 (85% motorised).
+    assert list(out["motorised"]) == [96.0, 192.0]
 
 
-def test_add_derived_modalities_scales_night_share(monkeypatch):
-    monkeypatch.setitem(
-        MODALITY_GROUPS, "motorised", {"car": 1.0, "heavy": 1.0, "night": 0.5}
-    )
-    df = pd.DataFrame(
-        {"car": [2.0], "heavy": [3.0], "night": [10.0]}
-    )
-    out = add_derived_modalities(df)
+def test_add_derived_modalities_accepts_night_share_override():
+    df = pd.DataFrame({"car": [2.0], "heavy": [3.0], "night": [10.0]})
+    out = add_derived_modalities(df, {"night": 0.5})
     assert list(out["motorised"]) == [10.0]
 
 
