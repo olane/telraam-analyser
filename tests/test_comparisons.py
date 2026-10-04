@@ -98,9 +98,13 @@ def test_holiday_vs_term_groups():
 
 def test_year_on_year_returns_one_per_year():
     instances = year_on_year(default_calendar(), PeriodKind.CHRISTMAS)
-    assert len(instances) == 2
+    assert len(instances) == 3
     assert all(i.kind is PeriodKind.CHRISTMAS for i in instances)
-    assert [i.academic_year for i in instances] == ["2025-26", "2026-27"]
+    assert [i.academic_year for i in instances] == [
+        "2024-25",
+        "2025-26",
+        "2026-27",
+    ]
 
 
 def test_axis_modes_mark_every_period():

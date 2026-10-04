@@ -4,8 +4,8 @@ The calendar is data-driven: add an academic year to :data:`CAMBRIDGE_YEARS`
 and it automatically becomes available to the UI. Year-on-year comparisons
 light up as soon as more than one year is present.
 
-The 2025-26 and 2026-27 Cambridge years are populated. Further years should be
-added from the official source:
+The 2024-25, 2025-26 and 2026-27 Cambridge years are populated. Further years
+should be added from the official source:
 https://www.cambridgeshire.gov.uk/residents/children-and-families/schools-learning/school-term-dates-closures
 """
 
@@ -23,6 +23,24 @@ from domain.models import Calendar, PeriodInstance, PeriodKind
 # ---------------------------------------------------------------------------
 
 CAMBRIDGE_YEARS: dict[str, dict] = {
+    "2024-25": {
+        "terms": {
+            "Autumn 1": (date(2024, 9, 3), date(2024, 10, 25)),
+            "Autumn 2": (date(2024, 11, 4), date(2024, 12, 20)),
+            "Spring 1": (date(2025, 1, 6), date(2025, 2, 14)),
+            "Spring 2": (date(2025, 2, 24), date(2025, 4, 4)),
+            "Summer 1": (date(2025, 4, 22), date(2025, 5, 23)),
+            "Summer 2": (date(2025, 6, 2), date(2025, 7, 23)),
+        },
+        "holidays": {
+            PeriodKind.AUTUMN_HALF: (date(2024, 10, 28), date(2024, 11, 1)),
+            PeriodKind.CHRISTMAS: (date(2024, 12, 23), date(2025, 1, 3)),
+            PeriodKind.FEB_HALF: (date(2025, 2, 17), date(2025, 2, 21)),
+            PeriodKind.EASTER: (date(2025, 4, 7), date(2025, 4, 21)),
+            PeriodKind.MAY_HALF: (date(2025, 5, 26), date(2025, 5, 30)),
+            PeriodKind.SUMMER: (date(2025, 7, 24), date(2025, 8, 31)),
+        },
+    },
     "2025-26": {
         "terms": {
             "Autumn 1": (date(2025, 9, 1), date(2025, 10, 24)),
