@@ -308,9 +308,9 @@ MODALITY_LABELS = {
 # Share of ``night`` headlight detections treated as motorised rather than
 # bikes. The camera cannot classify at night, so night is all headlights; this
 # scales the night contribution inside ``motorised`` to the estimated non-bike
-# portion. 1.0 treats every night detection as motorised (the current
-# assumption); it can later be derived from daytime bike/motorised shares.
-NIGHT_MOTORISED_SHARE = 1.0
+# portion. 0.8 treats 80% of night detections as motorised (20% as bikes); it
+# can later be derived from daytime bike/motorised shares.
+NIGHT_MOTORISED_SHARE = 0.8
 
 # Aggregate modalities and the weighted component columns they sum. Night is
 # scaled down by NIGHT_MOTORISED_SHARE so the unclassified bike portion is not

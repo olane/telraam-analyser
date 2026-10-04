@@ -60,7 +60,7 @@ def test_get_available_groups_offers_motorised_when_parts_present():
     assert get_available_groups(df) == ["motorised"]
 
 
-def test_add_derived_modalities_sums_parts():
+def test_add_derived_modalities_scales_night_by_default_share():
     df = pd.DataFrame(
         {
             "car": [1.0, 2.0],
@@ -69,7 +69,8 @@ def test_add_derived_modalities_sums_parts():
         }
     )
     out = add_derived_modalities(df)
-    assert list(out["motorised"]) == [111.0, 222.0]
+    # car + heavy + night x 0.8 (80% motorised).
+    assert list(out["motorised"]) == [91.0, 182.0]
 
 
 def test_add_derived_modalities_scales_night_share(monkeypatch):
