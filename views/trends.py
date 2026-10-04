@@ -9,6 +9,7 @@ from analysis import (
     compute_speed_distribution,
     compute_speed_summary,
     compute_speed_trend,
+    get_available_groups,
     weekday_adjusted_trend,
 )
 from charts import (
@@ -17,6 +18,7 @@ from charts import (
     plot_speed_trend,
     plot_weekday_adjusted_trend,
 )
+from domain.models import modality_label
 from ui.components import ALL_OPTION, V85_DOCS_URL, csv_download
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
@@ -47,12 +49,13 @@ def render() -> None:
         return
 
     top_left, top_right = st.columns([2, 1])
+    groups = get_available_groups(df)
     trend_choice = top_left.selectbox(
         "Trend modality",
-        [ALL_OPTION, *modalities],
+        [ALL_OPTION, *modalities, *groups],
         key="trend_modality",
-        help="Show a single mode, or the combined total of every mode selected "
-        "in the sidebar.",
+        help="Show a single mode or an aggregate group, or the combined total "
+        "of every mode selected in the sidebar.",
     )
     window = top_right.slider("Rolling average (days)", 3, 28, 7)
 
@@ -60,7 +63,9 @@ def render() -> None:
         modalities if trend_choice == ALL_OPTION else [trend_choice]
     )
     trend_label = (
-        "all selected modalities" if trend_choice == ALL_OPTION else trend_choice
+        "all selected modalities"
+        if trend_choice == ALL_OPTION
+        else modality_label(trend_choice)
     )
 
     trend = compute_daily_trend(df, trend_modalities, window)

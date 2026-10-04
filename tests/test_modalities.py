@@ -6,6 +6,7 @@ from analysis.filters import (
     MODALITY_GROUPS,
     add_derived_modalities,
     dedupe_modalities,
+    get_available_groups,
     get_available_modalities,
 )
 from domain.models import base_of, group_of, is_directional, modality_label
@@ -40,7 +41,21 @@ def test_modality_labels_are_human_readable():
     assert modality_label("motorised") == "Motorised vehicles"
 
 
-def test_get_available_modalities_offers_group_when_parts_present():
+def test_get_available_modalities_excludes_groups():
+    df = pd.DataFrame(
+        {
+            "pedestrian": [1.0],
+            "car": [2.0],
+            "heavy": [3.0],
+            "night": [4.0],
+        }
+    )
+    available = get_available_modalities(df)
+    assert "car" in available
+    assert "motorised" not in available
+
+
+def test_get_available_groups_offers_motorised_when_parts_present():
     df = pd.DataFrame(
         {
             "pedestrian": [1.0],
@@ -48,11 +63,10 @@ def test_get_available_modalities_offers_group_when_parts_present():
             "heavy": [3.0],
         }
     )
-    assert "motorised" not in get_available_modalities(df)
+    assert get_available_groups(df) == []
 
     df["night"] = 4.0
-    available = get_available_modalities(df)
-    assert "motorised" in available
+    assert get_available_groups(df) == ["motorised"]
 
 
 def test_add_derived_modalities_sums_parts():

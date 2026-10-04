@@ -18,20 +18,28 @@ from domain.models import (
 # ---------------------------------------------------------------------------
 
 def get_available_modalities(df: pd.DataFrame) -> list[str]:
-    """Return modality columns present in *df*, in a sensible order.
+    """Return raw modality columns present in *df*, in a sensible order.
 
-    Aggregate groups (e.g. ``motorised``) are offered when every one of their
-    component columns is present, even though the group column itself has not
-    been synthesized yet.
+    Aggregate groups (e.g. ``motorised``) are excluded: they belong in
+    per-view sub-filters, not the global sidebar modality picker.
     """
-    available: list[str] = []
-    for modality in MODALITY_ORDER:
-        if modality in MODALITY_GROUPS:
-            if all(c in df.columns for c in MODALITY_GROUPS[modality]):
-                available.append(modality)
-        elif modality in df.columns:
-            available.append(modality)
-    return available
+    return [
+        m for m in MODALITY_ORDER if m not in MODALITY_GROUPS and m in df.columns
+    ]
+
+
+def get_available_groups(df: pd.DataFrame) -> list[str]:
+    """Return aggregate modality groups (e.g. ``motorised``) usable on *df*.
+
+    A group can be offered once every one of its component columns is present,
+    even though :func:`add_derived_modalities` has not run yet.
+    """
+    return [
+        group
+        for group in MODALITY_ORDER
+        if group in MODALITY_GROUPS
+        and all(c in df.columns for c in MODALITY_GROUPS[group])
+    ]
 
 
 def add_derived_modalities(df: pd.DataFrame) -> pd.DataFrame:
