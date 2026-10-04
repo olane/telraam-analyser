@@ -48,9 +48,9 @@ Requires `TELRAAM_API_KEY` and `TELRAAM_SEGMENT_IDS` — from `.env` locally or
 - API requests are chunked at 90-day boundaries with 1 req/sec rate limiting; a
   daily request budget guards a public deployment
 - Modalities: pedestrian, bike, car, heavy, night (+ _lft/_rgt variants for S2);
-  `motorised` is a derived group = car + heavy + night×`NIGHT_MOTORISED_SHARE`
+  `motorised` is a derived group = car + heavy + night×night-share
   (night is headlight-only, so that share scales out the estimated bike portion;
-  0.8 for now, can be derived from daytime shares). Groups are offered in
+  user-adjustable, defaults to 85%). Groups are offered in
   per-view sub-filters (e.g. the Trends "Trend modality" picker), not the sidebar
 - Telraam data is CC BY-NC 4.0 — keep the attribution footer, no commercial use,
   aggregate-only exports

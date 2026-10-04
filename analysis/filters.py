@@ -41,20 +41,25 @@ def get_available_groups(df: pd.DataFrame) -> list[str]:
     ]
 
 
-def add_derived_modalities(df: pd.DataFrame) -> pd.DataFrame:
+def add_derived_modalities(
+    df: pd.DataFrame, weight_overrides: dict[str, float] | None = None
+) -> pd.DataFrame:
     """Add aggregate modality columns (e.g. ``motorised``) from their parts.
 
-    Each component is weighted, so the unclassified night share can be scaled
-    to its estimated motorised portion without touching the raw columns.
+    *weight_overrides* maps component columns to multipliers, so a view can
+    scale the unclassified night share without touching the raw columns.
     """
     if df is None or df.empty:
         return df
     df = df.copy()
+    overrides = weight_overrides or {}
     for group, weights in MODALITY_GROUPS.items():
-        if group not in df.columns and all(c in df.columns for c in weights):
-            df[group] = sum(
-                df[column] * weight for column, weight in weights.items()
-            )
+        if group in df.columns or not all(c in df.columns for c in weights):
+            continue
+        df[group] = sum(
+            df[column] * overrides.get(column, weight)
+            for column, weight in weights.items()
+        )
     return df
 
 

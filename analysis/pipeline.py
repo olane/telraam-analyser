@@ -8,7 +8,6 @@ from __future__ import annotations
 import pandas as pd
 
 from analysis.filters import (
-    add_derived_modalities,
     filter_days_of_week,
     filter_time_of_day,
     label_periods,
@@ -40,7 +39,6 @@ def prepare_frame(
     if df is None or df.empty:
         return pd.DataFrame()
 
-    df = add_derived_modalities(df)
     df = mark_exclusions(df, exclusions)
     if comparison.mode is not ComparisonMode.ROADWORKS:
         df = df[~df["is_excluded"].astype(bool)]

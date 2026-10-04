@@ -96,6 +96,49 @@ def test_trends_modality_filter_offers_all():
     assert "All" in boxes["Trend modality"].options
 
 
+def _trends_group_script() -> None:
+    from datetime import date
+
+    import pandas as pd
+    import streamlit as st
+
+    import views.trends as trends
+    from domain.models import FilterSettings, PeriodInstance, PeriodKind
+    from ui.state import Controls
+
+    index = pd.date_range("2026-01-05", "2026-02-28 23:00", freq="h", tz="UTC")
+    df = pd.DataFrame(index=index)
+    df["pedestrian"] = 2.0
+    df["bike"] = 3.0
+    df["car"] = 10.0
+    df["heavy"] = 0.5
+    df["night"] = 1.0
+
+    instances = [
+        PeriodInstance(
+            "Spring term",
+            PeriodKind.TERM,
+            ((date(2026, 1, 5), date(2026, 1, 30)),),
+        ),
+    ]
+    st.session_state["controls"] = Controls(
+        segment_id="123",
+        filters=FilterSettings(selected_modalities=["car", "heavy", "night"]),
+        exclusions=[],
+        instances=instances,
+        df=df,
+    )
+    trends.render()
+
+
+def test_trends_motorised_selection_reveals_share_slider():
+    at = AppTest.from_function(_trends_group_script, default_timeout=30).run()
+    assert not at.exception
+    at.selectbox(key="trend_modality").select("motorised").run()
+    assert not at.exception
+    assert "Night assumed motorised (%)" in {s.label for s in at.slider}
+
+
 def _before_after_script() -> None:
     from datetime import date
 
