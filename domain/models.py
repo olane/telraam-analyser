@@ -281,6 +281,7 @@ MODALITY_ORDER = [
     "car",
     "heavy",
     "night",
+    "motorised",
     "pedestrian_lft",
     "pedestrian_rgt",
     "bike_lft",
@@ -298,9 +299,28 @@ MODALITY_LABELS = {
     "bike": "Cycles",
     "car": "Cars",
     "heavy": "Heavy vehicles",
-    "night": "Night (all modes)",
+    "night": "Night (headlights, unclassified)",
+    "motorised": "Motorised vehicles",
     "night_lft": "Night (left)",
     "night_rgt": "Night (right)",
+}
+
+# Share of ``night`` headlight detections treated as motorised rather than
+# bikes. The camera cannot classify at night, so night is all headlights; this
+# scales the night contribution inside ``motorised`` to the estimated non-bike
+# portion. 1.0 treats every night detection as motorised (the current
+# assumption); it can later be derived from daytime bike/motorised shares.
+NIGHT_MOTORISED_SHARE = 1.0
+
+# Aggregate modalities and the weighted component columns they sum. Night is
+# scaled down by NIGHT_MOTORISED_SHARE so the unclassified bike portion is not
+# reported as motorised. Components stay separate columns of their own.
+MODALITY_GROUPS: dict[str, dict[str, float]] = {
+    "motorised": {
+        "car": 1.0,
+        "heavy": 1.0,
+        "night": NIGHT_MOTORISED_SHARE,
+    },
 }
 
 # S2 direction split variants carry a left/right suffix; their base column is
@@ -317,6 +337,19 @@ def base_of(modality: str) -> str:
     """Return the combined-modality name for a directional variant."""
     base, sep, _ = modality.rpartition("_")
     return base if sep else modality
+
+
+def group_of(modality: str) -> str | None:
+    """Return the aggregate group a modality belongs to, if any.
+
+    ``car``, ``heavy``, ``night`` and their directional variants all belong to
+    ``motorised``; other modalities belong to no group.
+    """
+    base = base_of(modality)
+    for group, weights in MODALITY_GROUPS.items():
+        if base in weights:
+            return group
+    return None
 
 
 def modality_label(modality: str) -> str:

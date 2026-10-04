@@ -22,6 +22,7 @@ MODALITY_COLOURS = {
     "car": "#1f77b4",
     "heavy": "#d62728",
     "night": "#4c4c8a",
+    "motorised": "#8c564b",
     "pedestrian_lft": "#98df8a",
     "pedestrian_rgt": "#2ca02c",
     "bike_lft": "#ffbb78",
