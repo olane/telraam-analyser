@@ -9,11 +9,33 @@ from charts.theme import KIND_COLOURS
 from domain.models import Exclusion, PeriodInstance
 
 
+def _anchor_x(
+    ranges: tuple, lo: pd.Timestamp, hi: pd.Timestamp
+) -> pd.Timestamp | None:
+    """X position for a band label: its first range that is actually visible.
+
+    A range that starts before the window but enters it is anchored at the
+    window's left edge, so its label isn't drawn off the plot. Multi-range
+    aggregates skip earlier ranges that fall outside the window entirely.
+    """
+    if not ranges:
+        return None
+    lo_date, hi_date = lo.date(), hi.date()
+    for start, end in ranges:
+        if end < lo_date or start > hi_date:
+            continue
+        return pd.Timestamp(lo_date) if start < lo_date else pd.Timestamp(start)
+    return pd.Timestamp(ranges[0][0])
+
+
 def _add_bands(
     fig: go.Figure,
     instances: list[PeriodInstance] | None,
     exclusions: list[Exclusion] | None,
+    days: pd.Series,
 ) -> None:
+    lo = days.min()
+    hi = days.max()
     annotated: set[str] = set()
     for instance in instances or []:
         colour = KIND_COLOURS.get(instance.kind.value, "#7f7f7f")
@@ -40,10 +62,10 @@ def _add_bands(
                 layer="below",
             )
         if instance.label not in annotated:
-            first = instance.ranges[0] if instance.ranges else None
-            if first:
+            anchor = _anchor_x(instance.ranges, lo, hi)
+            if anchor is not None:
                 fig.add_annotation(
-                    x=pd.Timestamp(first[0]),
+                    x=anchor,
                     y=1.0,
                     yref="paper",
                     text=instance.label,
@@ -64,9 +86,9 @@ def _add_bands(
                 layer="below",
             )
         if exclusion.label not in annotated and exclusion.ranges:
-            start = exclusion.ranges[0][0]
+            anchor = _anchor_x(exclusion.ranges, lo, hi)
             fig.add_annotation(
-                x=pd.Timestamp(start),
+                x=anchor,
                 y=0.02,
                 yref="paper",
                 text=f"Excluded: {exclusion.label}",
@@ -77,7 +99,7 @@ def _add_bands(
             annotated.add(exclusion.label)
 
 
-def _clip_x_range(fig: go.Figure, trend_df: pd.DataFrame) -> None:
+def _clip_x_range(fig: go.Figure, days: pd.Series) -> None:
     """Keep the x-axis to the loaded data.
 
     Period bands and exclusions are drawn as shapes in data coordinates, and
@@ -85,7 +107,6 @@ def _clip_x_range(fig: go.Figure, trend_df: pd.DataFrame) -> None:
     to the calendar would otherwise stretch the axis into blank space beyond the
     data, so clamp the range to the actual days plotted.
     """
-    days = pd.to_datetime(trend_df["day"])
     if not days.empty:
         fig.update_xaxes(range=[days.min(), days.max()])
 
@@ -123,8 +144,9 @@ def plot_daily_trend(
         )
     )
 
-    _add_bands(fig, instances, exclusions)
-    _clip_x_range(fig, trend_df)
+    days = pd.to_datetime(trend_df["day"])
+    _add_bands(fig, instances, exclusions, days)
+    _clip_x_range(fig, days)
 
     fig.update_layout(
         title=title,
@@ -169,8 +191,9 @@ def plot_weekday_adjusted_trend(
         )
     )
 
-    _add_bands(fig, instances, exclusions)
-    _clip_x_range(fig, trend_df)
+    days = pd.to_datetime(trend_df["day"])
+    _add_bands(fig, instances, exclusions, days)
+    _clip_x_range(fig, days)
 
     fig.update_layout(
         title=title,

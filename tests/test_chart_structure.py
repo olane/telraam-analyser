@@ -125,6 +125,24 @@ def test_trend_x_range_is_clamped_to_data(make_df):
     assert pd.Timestamp(end).date() == date(2025, 9, 30)
 
 
+def test_entering_band_label_is_anchored_inside_window(make_df):
+    """A holiday that starts before the window but enters it is still labelled."""
+    df = make_df("2026-08-10", "2026-09-05 23:00")
+    trend = compute_daily_trend(df, MODALITIES)
+    summer = PeriodInstance(
+        "Summer holiday",
+        PeriodKind.SUMMER,
+        ((date(2026, 7, 21), date(2026, 8, 31)),),
+    )
+
+    fig = plot_daily_trend(trend, instances=[summer])
+
+    label = [a for a in fig.layout.annotations if a.text == "Summer holiday"]
+    assert len(label) == 1
+    start, _ = fig.layout.xaxis.range
+    assert pd.Timestamp(label[0].x).date() == pd.Timestamp(start).date()
+
+
 # ---------------------------------------------------------------------------
 # Comparison charts
 # ---------------------------------------------------------------------------

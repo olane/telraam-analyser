@@ -108,10 +108,10 @@ Prebuilt images are published to `ghcr.io/olane/telraam-analyser`.
 
 ## Calendars
 
-Academic calendars live in `domain/calendars.py`. The Cambridge 2025-26 and
-2026-27 years are populated. Add a year by copying an existing block in
-`CAMBRIDGE_YEARS` and changing the dates — year-on-year comparisons then work
-automatically.
+Academic calendars live in `domain/calendars.py`. The Cambridge 2024-25,
+2025-26 and 2026-27 years are populated. Add a year by copying an existing
+block in `CAMBRIDGE_YEARS` and changing the dates — year-on-year comparisons
+then work automatically.
 
 Source for Cambridge term dates:
 <https://www.cambridgeshire.gov.uk/residents/children-and-families/schools-learning/school-term-dates-closures>

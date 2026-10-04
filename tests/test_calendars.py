@@ -9,9 +9,9 @@ from domain.models import PeriodKind
 def test_default_calendar_has_expected_instances():
     calendar = default_calendar()
     assert calendar.name == "Cambridge"
-    assert calendar.years() == ["2025-26", "2026-27"]
-    assert len(calendar.of_kind(PeriodKind.TERM)) == 12
-    assert len(calendar.of_kind(PeriodKind.CHRISTMAS)) == 2
+    assert calendar.years() == ["2024-25", "2025-26", "2026-27"]
+    assert len(calendar.of_kind(PeriodKind.TERM)) == 18
+    assert len(calendar.of_kind(PeriodKind.CHRISTMAS)) == 3
 
 
 def test_labels_are_unique():
@@ -20,7 +20,11 @@ def test_labels_are_unique():
 
 
 def test_christmas_dates():
-    christmas = default_calendar().of_kind(PeriodKind.CHRISTMAS)[0]
+    christmas = next(
+        i
+        for i in default_calendar().of_kind(PeriodKind.CHRISTMAS)
+        if i.academic_year == "2025-26"
+    )
     assert christmas.start == date(2025, 12, 22)
     assert christmas.end == date(2026, 1, 2)
     assert christmas.n_days == 12
@@ -28,7 +32,11 @@ def test_christmas_dates():
 
 def test_summer_holiday_is_present():
     summer = default_calendar().of_kind(PeriodKind.SUMMER)
-    assert {i.academic_year for i in summer} == {"2025-26", "2026-27"}
+    assert {i.academic_year for i in summer} == {
+        "2024-25",
+        "2025-26",
+        "2026-27",
+    }
     first = next(i for i in summer if i.academic_year == "2025-26")
     assert first.start == date(2026, 7, 21)
     assert first.end == date(2026, 8, 31)
