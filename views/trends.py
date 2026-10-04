@@ -70,6 +70,13 @@ def render() -> None:
             help="Headlight-only night detections counted as motorised; the "
             "rest are treated as bikes.",
         )
+        st.caption(
+            "In winter months it gets dark earlier, so more traffic is only "
+            "detectable as headlights and is counted under **night** instead "
+            "of its mode, under-counting the other categories. "
+            "**Motorised vehicles** adds back the night detections assumed "
+            "not to be bikes to correct for this."
+        )
         df = add_derived_modalities(df, {"night": night_share / 100})
 
     trend_modalities = (
