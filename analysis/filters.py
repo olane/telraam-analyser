@@ -5,9 +5,11 @@ from __future__ import annotations
 import pandas as pd
 
 from domain.models import (
+    MODALITY_GROUPS,
     MODALITY_ORDER,
     Exclusion,
     PeriodInstance,
+    group_of,
     is_directional,
 )
 
@@ -16,19 +18,52 @@ from domain.models import (
 # ---------------------------------------------------------------------------
 
 def get_available_modalities(df: pd.DataFrame) -> list[str]:
-    """Return modality columns present in *df*, in a sensible order."""
-    return [m for m in MODALITY_ORDER if m in df.columns]
+    """Return modality columns present in *df*, in a sensible order.
+
+    Aggregate groups (e.g. ``motorised``) are offered when every one of their
+    component columns is present, even though the group column itself has not
+    been synthesized yet.
+    """
+    available: list[str] = []
+    for modality in MODALITY_ORDER:
+        if modality in MODALITY_GROUPS:
+            if all(c in df.columns for c in MODALITY_GROUPS[modality]):
+                available.append(modality)
+        elif modality in df.columns:
+            available.append(modality)
+    return available
+
+
+def add_derived_modalities(df: pd.DataFrame) -> pd.DataFrame:
+    """Add aggregate modality columns (e.g. ``motorised``) from their parts.
+
+    Each component is weighted, so the unclassified night share can be scaled
+    to its estimated motorised portion without touching the raw columns.
+    """
+    if df is None or df.empty:
+        return df
+    df = df.copy()
+    for group, weights in MODALITY_GROUPS.items():
+        if group not in df.columns and all(c in df.columns for c in weights):
+            df[group] = sum(
+                df[column] * weight for column, weight in weights.items()
+            )
+    return df
 
 
 def dedupe_modalities(modalities: list[str]) -> list[str]:
-    """Drop a combined modality when its directional variants are selected.
+    """Drop modalities that would be counted twice when summed.
 
-    ``car`` is the sum of ``car_lft`` and ``car_rgt``, so summing all three
-    double counts. Prefer the directional split when both are present.
+    A combined modality is dropped when its directional variants are selected.
+    An aggregate group (``motorised``) supersedes its component modalities and
+    their directional variants.
     """
     selected = set(modalities)
+    groups_selected = {m for m in selected if m in MODALITY_GROUPS}
     out: list[str] = []
     for modality in modalities:
+        if any(group_of(modality) == group for group in groups_selected):
+            continue
         if not is_directional(modality) and (
             f"{modality}_lft" in selected or f"{modality}_rgt" in selected
         ):

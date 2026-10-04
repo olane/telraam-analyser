@@ -22,6 +22,7 @@ from analysis.comparisons import (
     resolve,
 )
 from analysis.filters import (
+    add_derived_modalities,
     add_time_columns,
     dedupe_modalities,
     get_available_modalities,
@@ -39,6 +40,7 @@ from analysis.trends import (
 __all__ = [
     "WEEKDAY_LABELS",
     "add_comparison_group",
+    "add_derived_modalities",
     "add_time_columns",
     "compute_daily_totals",
     "compute_daily_trend",
