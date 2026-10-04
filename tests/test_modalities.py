@@ -6,9 +6,10 @@ from analysis.filters import (
     MODALITY_GROUPS,
     add_derived_modalities,
     dedupe_modalities,
+    get_available_groups,
     get_available_modalities,
 )
-from domain.models import base_of, group_of, is_directional, modality_label
+from domain.models import base_of, is_directional, modality_label
 
 
 def test_is_directional_flags_split_variants():
@@ -24,15 +25,6 @@ def test_base_of_strips_direction_suffix():
     assert base_of("car") == "car"
 
 
-def test_group_of_maps_motorised_components():
-    assert group_of("car") == "motorised"
-    assert group_of("heavy") == "motorised"
-    assert group_of("night") == "motorised"
-    assert group_of("night_lft") == "motorised"
-    assert group_of("pedestrian") is None
-    assert group_of("motorised") is None
-
-
 def test_modality_labels_are_human_readable():
     assert modality_label("pedestrian") == "Pedestrians"
     assert modality_label("car_lft") == "Cars (left)"
@@ -40,7 +32,21 @@ def test_modality_labels_are_human_readable():
     assert modality_label("motorised") == "Motorised vehicles"
 
 
-def test_get_available_modalities_offers_group_when_parts_present():
+def test_get_available_modalities_excludes_groups():
+    df = pd.DataFrame(
+        {
+            "pedestrian": [1.0],
+            "car": [2.0],
+            "heavy": [3.0],
+            "night": [4.0],
+        }
+    )
+    available = get_available_modalities(df)
+    assert "car" in available
+    assert "motorised" not in available
+
+
+def test_get_available_groups_offers_motorised_when_parts_present():
     df = pd.DataFrame(
         {
             "pedestrian": [1.0],
@@ -48,14 +54,13 @@ def test_get_available_modalities_offers_group_when_parts_present():
             "heavy": [3.0],
         }
     )
-    assert "motorised" not in get_available_modalities(df)
+    assert get_available_groups(df) == []
 
     df["night"] = 4.0
-    available = get_available_modalities(df)
-    assert "motorised" in available
+    assert get_available_groups(df) == ["motorised"]
 
 
-def test_add_derived_modalities_sums_parts():
+def test_add_derived_modalities_scales_night_by_default_share():
     df = pd.DataFrame(
         {
             "car": [1.0, 2.0],
@@ -64,7 +69,8 @@ def test_add_derived_modalities_sums_parts():
         }
     )
     out = add_derived_modalities(df)
-    assert list(out["motorised"]) == [111.0, 222.0]
+    # car + heavy + night x 0.8 (80% motorised).
+    assert list(out["motorised"]) == [91.0, 182.0]
 
 
 def test_add_derived_modalities_scales_night_share(monkeypatch):
@@ -99,13 +105,3 @@ def test_dedupe_handles_night_split():
         "night_lft",
         "night_rgt",
     ]
-
-
-def test_dedupe_group_supersedes_components():
-    assert dedupe_modalities(
-        ["pedestrian", "motorised", "car", "heavy", "night"]
-    ) == ["pedestrian", "motorised"]
-
-
-def test_dedupe_group_supersedes_directional_components():
-    assert dedupe_modalities(["motorised", "car_lft", "car_rgt"]) == ["motorised"]
