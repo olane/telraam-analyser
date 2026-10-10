@@ -29,6 +29,7 @@ from analysis.filters import (
     get_available_modalities,
     keep_assigned,
     label_periods,
+    redistribute_night,
 )
 from analysis.grouping import add_comparison_group
 from analysis.pipeline import prepare_frame
@@ -63,6 +64,7 @@ __all__ = [
     "label_periods",
     "period_mean_daily",
     "prepare_frame",
+    "redistribute_night",
     "resolve",
     "weekday_adjusted_trend",
     "weekday_hour_matrix",

@@ -7,6 +7,7 @@ import pandas as pd
 from domain.models import (
     MODALITY_GROUPS,
     MODALITY_ORDER,
+    NIGHT_DISTRIBUTION_TARGETS,
     Exclusion,
     PeriodInstance,
     is_directional,
@@ -41,26 +42,53 @@ def get_available_groups(df: pd.DataFrame) -> list[str]:
     ]
 
 
-def add_derived_modalities(
-    df: pd.DataFrame, weight_overrides: dict[str, float] | None = None
-) -> pd.DataFrame:
+def add_derived_modalities(df: pd.DataFrame) -> pd.DataFrame:
     """Add aggregate modality columns (e.g. ``motorised``) from their parts.
 
-    *weight_overrides* maps component columns to multipliers, so a view can
-    scale the unclassified night share without touching the raw columns.
+    A group is only added when every component column is present, so this is
+    safe to call on any frame.
     """
     if df is None or df.empty:
         return df
     df = df.copy()
-    overrides = weight_overrides or {}
     for group, weights in MODALITY_GROUPS.items():
         if group in df.columns or not all(c in df.columns for c in weights):
             continue
-        df[group] = sum(
-            df[column] * overrides.get(column, weight)
-            for column, weight in weights.items()
-        )
+        df[group] = sum(df[column] * weight for column, weight in weights.items())
     return df
+
+
+def redistribute_night(
+    df: pd.DataFrame, shares: dict[str, float]
+) -> pd.DataFrame:
+    """Move ``night`` counts into the classifiable modalities, then drop night.
+
+    *shares* are relative weights for the target categories and are normalised
+    to sum to 1, so they need not already do so. Targets absent from *df* are
+    skipped and the combined night total is conserved. A left/right night split,
+    where present, follows the combined shares so directional analysis stays
+    consistent. When no target column exists the frame is returned unchanged.
+    """
+    if df is None or df.empty or "night" not in df.columns:
+        return df
+
+    targets = [t for t in NIGHT_DISTRIBUTION_TARGETS if t in df.columns]
+    weights = {t: max(shares.get(t, 0.0), 0.0) for t in targets}
+    total = sum(weights.values())
+    if not targets or total <= 0:
+        return df
+
+    df = df.copy()
+    for target, weight in weights.items():
+        share = weight / total
+        df[target] = df[target] + df["night"] * share
+        for suffix in ("_lft", "_rgt"):
+            source, dest = f"night{suffix}", f"{target}{suffix}"
+            if source in df.columns and dest in df.columns:
+                df[dest] = df[dest] + df[source] * share
+
+    drop = [c for c in ("night", "night_lft", "night_rgt") if c in df.columns]
+    return df.drop(columns=drop)
 
 
 def dedupe_modalities(modalities: list[str]) -> list[str]:

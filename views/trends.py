@@ -19,7 +19,7 @@ from charts import (
     plot_speed_trend,
     plot_weekday_adjusted_trend,
 )
-from domain.models import NIGHT_MOTORISED_SHARE_DEFAULT, modality_label
+from domain.models import modality_label
 from ui.components import ALL_OPTION, V85_DOCS_URL, csv_download
 from ui.state import get_controls, prepared_df
 from ui.theme import page_header
@@ -62,22 +62,7 @@ def render() -> None:
     window = top_right.slider("Rolling average (days)", 3, 28, 7)
 
     if trend_choice in groups:
-        night_share = st.slider(
-            "Night assumed motorised (%)",
-            0,
-            100,
-            int(round(NIGHT_MOTORISED_SHARE_DEFAULT * 100)),
-            help="Headlight-only night detections counted as motorised; the "
-            "rest are treated as bikes.",
-        )
-        st.caption(
-            "In winter months it gets dark earlier, so more traffic is only "
-            "detectable as headlights and is counted under **night** instead "
-            "of its mode, under-counting the other categories. "
-            "**Motorised vehicles** adds back the night detections assumed "
-            "not to be bikes to correct for this."
-        )
-        df = add_derived_modalities(df, {"night": night_share / 100})
+        df = add_derived_modalities(df)
 
     trend_modalities = (
         modalities if trend_choice == ALL_OPTION else [trend_choice]
