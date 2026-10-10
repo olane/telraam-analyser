@@ -20,12 +20,15 @@ from analysis import (
 )
 from domain.models import (
     HOLIDAY_KINDS,
+    NIGHT_DISTRIBUTION_DEFAULT,
+    NIGHT_DISTRIBUTION_TARGETS,
     Calendar,
     ComparisonConfig,
     ComparisonMode,
     Exclusion,
     FilterSettings,
     InterventionFilter,
+    NightRedistribution,
     PeriodInstance,
     PeriodKind,
     base_of,
@@ -181,9 +184,70 @@ def _mark_periods(calendar: Calendar) -> list[PeriodInstance]:
     return [i for i in calendar.instances if i.kind in chosen]
 
 
-def _filters(df) -> list[str]:
+def _night_redistribution(df) -> NightRedistribution:
+    """Global toggle and per-mode shares for moving night into other modes.
+
+    Night detections are headlights only, so the camera cannot classify them.
+    When on, those counts are added to the chosen modes and the night buckets
+    disappear; when off, night is left as its own mode.
+    """
+    targets = (
+        [t for t in NIGHT_DISTRIBUTION_TARGETS if t in df.columns]
+        if df is not None
+        else []
+    )
+
+    enabled = st.sidebar.checkbox(
+        "Redistribute night into other modes",
+        value=True,
+        key="night_redistribute_enabled",
+        disabled=not targets,
+        help="Night detections are headlights only and cannot be classified. "
+        "When on, they are moved into the modes below and night is hidden; "
+        "when off, night is shown as its own mode.",
+    )
+    if not targets:
+        st.sidebar.caption(
+            "No night data for this segment, so there is nothing to redistribute."
+        )
+        return NightRedistribution(enabled=False)
+
+    shares = dict(NIGHT_DISTRIBUTION_DEFAULT)
+    if enabled:
+        with st.sidebar.expander("Night proportions"):
+            st.caption(
+                "Assumed split of night detections per mode. Weights are "
+                "normalised, so they need not sum to 100%."
+            )
+            raw: dict[str, float] = {}
+            for target in targets:
+                default = int(
+                    round(NIGHT_DISTRIBUTION_DEFAULT.get(target, 0.0) * 100)
+                )
+                raw[target] = st.slider(
+                    f"{modality_label(target)} (%)",
+                    0,
+                    100,
+                    default,
+                    key=f"night_share_{target}",
+                )
+            total = sum(raw.values())
+            if total <= 0:
+                st.warning(
+                    "At least one mode must receive a share of the night; "
+                    "using the defaults instead."
+                )
+            else:
+                shares = {target: value / total for target, value in raw.items()}
+
+    return NightRedistribution(enabled=enabled, shares=shares)
+
+
+def _filters(df, hide_night: bool = False) -> list[str]:
     """Global filters applied by every view; returns selected modalities."""
     available = get_available_modalities(df) if df is not None else []
+    if hide_night:
+        available = [m for m in available if base_of(m) != "night"]
     combined = [m for m in available if not is_directional(m)]
     variants = [m for m in available if is_directional(m)]
 
@@ -282,7 +346,8 @@ def render_sidebar(config, calendar: Calendar, pages, current_page) -> Controls:
         else resolve(calendar, comparison)
     )
 
-    selected_modalities = _filters(df)
+    night = _night_redistribution(df)
+    selected_modalities = _filters(df, hide_night=night.enabled)
     _exclusions()
 
     hour_range = st.session_state.get("_hour_range", (0, 23))
@@ -302,6 +367,7 @@ def render_sidebar(config, calendar: Calendar, pages, current_page) -> Controls:
         exclusions=list(st.session_state["exclusions"]),
         instances=instances,
         comparison=comparison,
+        night=night,
         df=df if df is not None else pd.DataFrame(),
         error=error,
     )

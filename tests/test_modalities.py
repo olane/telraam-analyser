@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import pandas as pd
+import pytest
 
 from analysis.filters import (
     add_derived_modalities,
     dedupe_modalities,
     get_available_groups,
     get_available_modalities,
+    redistribute_night,
 )
 from domain.models import base_of, is_directional, modality_label
 
@@ -50,16 +52,15 @@ def test_get_available_groups_offers_motorised_when_parts_present():
         {
             "pedestrian": [1.0],
             "car": [2.0],
-            "heavy": [3.0],
         }
     )
     assert get_available_groups(df) == []
 
-    df["night"] = 4.0
+    df["heavy"] = 3.0
     assert get_available_groups(df) == ["motorised"]
 
 
-def test_add_derived_modalities_uses_default_night_share():
+def test_add_derived_modalities_sums_car_and_heavy():
     df = pd.DataFrame(
         {
             "car": [1.0, 2.0],
@@ -68,14 +69,54 @@ def test_add_derived_modalities_uses_default_night_share():
         }
     )
     out = add_derived_modalities(df)
-    # car + heavy + night x 0.85 (85% motorised).
-    assert list(out["motorised"]) == [96.0, 192.0]
+    # motorised is only car + heavy; night is not folded in.
+    assert list(out["motorised"]) == [11.0, 22.0]
 
 
-def test_add_derived_modalities_accepts_night_share_override():
-    df = pd.DataFrame({"car": [2.0], "heavy": [3.0], "night": [10.0]})
-    out = add_derived_modalities(df, {"night": 0.5})
-    assert list(out["motorised"]) == [10.0]
+def test_redistribute_night_moves_counts_and_drops_night():
+    df = pd.DataFrame(
+        {"bike": [1.0], "car": [2.0], "heavy": [3.0], "night": [100.0]}
+    )
+    out = redistribute_night(df, {"bike": 0.15, "car": 0.85, "heavy": 0.0})
+    assert "night" not in out.columns
+    assert out["bike"].tolist() == pytest.approx([16.0])
+    assert out["car"].tolist() == pytest.approx([87.0])
+    assert out["heavy"].tolist() == pytest.approx([3.0])
+
+
+def test_redistribute_night_normalises_relative_shares():
+    df = pd.DataFrame({"bike": [0.0], "car": [0.0], "night": [10.0]})
+    out = redistribute_night(df, {"bike": 1.0, "car": 3.0})
+    assert out["bike"].tolist() == pytest.approx([2.5])
+    assert out["car"].tolist() == pytest.approx([7.5])
+
+
+def test_redistribute_night_keeps_direction_splits_in_step():
+    df = pd.DataFrame(
+        {
+            "bike": [0.0],
+            "car": [0.0],
+            "night": [10.0],
+            "night_lft": [4.0],
+            "night_rgt": [6.0],
+            "car_lft": [0.0],
+            "car_rgt": [0.0],
+        }
+    )
+    out = redistribute_night(df, {"car": 1.0})
+    assert "night" not in out.columns
+    assert "night_lft" not in out.columns
+    assert "night_rgt" not in out.columns
+    assert list(out["car"]) == [10.0]
+    assert list(out["car_lft"]) == [4.0]
+    assert list(out["car_rgt"]) == [6.0]
+
+
+def test_redistribute_night_without_targets_is_a_noop():
+    df = pd.DataFrame({"pedestrian": [1.0], "night": [5.0]})
+    out = redistribute_night(df, {"car": 1.0})
+    assert "night" in out.columns
+    assert list(out["night"]) == [5.0]
 
 
 def test_dedupe_drops_combined_when_split_selected():

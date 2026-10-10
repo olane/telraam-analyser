@@ -123,7 +123,7 @@ def _trends_group_script() -> None:
     ]
     st.session_state["controls"] = Controls(
         segment_id="123",
-        filters=FilterSettings(selected_modalities=["car", "heavy", "night"]),
+        filters=FilterSettings(selected_modalities=["car", "heavy"]),
         exclusions=[],
         instances=instances,
         df=df,
@@ -131,12 +131,13 @@ def _trends_group_script() -> None:
     trends.render()
 
 
-def test_trends_motorised_selection_reveals_share_slider():
+def test_trends_motorised_selection_renders():
     at = AppTest.from_function(_trends_group_script, default_timeout=30).run()
     assert not at.exception
-    at.selectbox(key="trend_modality").select("motorised").run()
+    box = at.selectbox(key="trend_modality")
+    assert "motorised" in box.options
+    box.select("motorised").run()
     assert not at.exception
-    assert "Night assumed motorised (%)" in {s.label for s in at.slider}
 
 
 def _before_after_script() -> None:

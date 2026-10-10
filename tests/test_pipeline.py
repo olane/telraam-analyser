@@ -14,6 +14,7 @@ from domain.models import (
     ComparisonMode,
     Exclusion,
     FilterSettings,
+    NightRedistribution,
     PeriodInstance,
     PeriodKind,
 )
@@ -92,3 +93,32 @@ def test_prepare_frame_drops_excluded_rows_for_other_axes(make_df):
         ComparisonConfig(mode=ComparisonMode.HOLIDAY_VS_TERM),
     )
     assert not out["is_excluded"].any()
+
+
+def test_prepare_frame_redistributes_night_when_enabled(make_df):
+    df = make_df("2026-01-05", "2026-01-05 23:00")
+    df["night"] = 10.0
+    out = prepare_frame(
+        df,
+        FilterSettings(),
+        [],
+        _instances(),
+        ComparisonConfig(mode=ComparisonMode.HOLIDAY_VS_TERM),
+        night=NightRedistribution(enabled=True, shares={"car": 1.0}),
+    )
+    assert "night" not in out.columns
+    assert out["car"].iloc[0] == df["car"].iloc[0] + 10.0
+
+
+def test_prepare_frame_keeps_night_when_disabled(make_df):
+    df = make_df("2026-01-05", "2026-01-05 23:00")
+    df["night"] = 10.0
+    out = prepare_frame(
+        df,
+        FilterSettings(),
+        [],
+        _instances(),
+        ComparisonConfig(mode=ComparisonMode.HOLIDAY_VS_TERM),
+        night=NightRedistribution(enabled=False),
+    )
+    assert "night" in out.columns

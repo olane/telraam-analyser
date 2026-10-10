@@ -17,6 +17,7 @@ from domain.models import (
     ComparisonConfig,
     Exclusion,
     FilterSettings,
+    NightRedistribution,
     PeriodInstance,
 )
 from guard import BudgetExceeded, DailyRequestBudget
@@ -31,6 +32,7 @@ class Controls:
     exclusions: list[Exclusion]
     instances: list[PeriodInstance]
     comparison: ComparisonConfig = field(default_factory=ComparisonConfig)
+    night: NightRedistribution = field(default_factory=NightRedistribution)
     df: pd.DataFrame = field(default_factory=pd.DataFrame)
     error: str | None = None
 
@@ -117,4 +119,5 @@ def prepared_df(keep_only_assigned: bool = False) -> pd.DataFrame:
         controls.instances,
         controls.comparison,
         keep_only_assigned=keep_only_assigned,
+        night=controls.night,
     )
