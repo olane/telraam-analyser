@@ -1,8 +1,9 @@
 {
   "worktree": {
     "setup": [
-      "python3 -m venv .venv",
-      ".venv/bin/pip install -q -e \".[dev]\"",
+      "[ -x \"$HOME/.local/bin/uv\" ] || curl -LsSf https://astral.sh/uv/install.sh | sh",
+      "\"$HOME/.local/bin/uv\" venv .venv --python 3.12",
+      "VIRTUAL_ENV=.venv \"$HOME/.local/bin/uv\" pip install -q -e \".[dev]\"",
       "if [ ! -f .env ] && [ -f \"$PASEO_SOURCE_CHECKOUT_PATH/.env\" ]; then cp \"$PASEO_SOURCE_CHECKOUT_PATH/.env\" .env; fi"
     ]
   },
