@@ -314,8 +314,8 @@ NIGHT_DISTRIBUTION_TARGETS = ("bike", "car", "heavy")
 # relative weights, normalised to sum to 1 when applied.
 NIGHT_DISTRIBUTION_DEFAULT: dict[str, float] = {
     "bike": 0.15,
-    "car": 0.85,
-    "heavy": 0.0,
+    "car": 0.80,
+    "heavy": 0.05,
 }
 
 # Aggregate modalities and the component columns they sum. Components stay
