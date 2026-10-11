@@ -135,7 +135,7 @@ def test_trends_motorised_selection_renders():
     at = AppTest.from_function(_trends_group_script, default_timeout=30).run()
     assert not at.exception
     box = at.selectbox(key="trend_modality")
-    assert "motorised" in box.options
+    assert "Motorised vehicles" in box.options
     box.select("motorised").run()
     assert not at.exception
 
