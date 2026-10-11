@@ -47,11 +47,12 @@ Requires `TELRAAM_API_KEY` and `TELRAAM_SEGMENT_IDS` — from `.env` locally or
   works automatically once a second year exists
 - API requests are chunked at 90-day boundaries with 1 req/sec rate limiting; a
   daily request budget guards a public deployment
-- Modalities: pedestrian, bike, car, heavy, night (+ _lft/_rgt variants for S2);
-  `motorised` is a derived group = car + heavy + night×night-share
-  (night is headlight-only, so that share scales out the estimated bike portion;
-  user-adjustable, defaults to 85%). Groups are offered in
-  per-view sub-filters (e.g. the Trends "Trend modality" picker), not the sidebar
+- Modalities: pedestrian, bike, car, heavy, night (+ _lft/_rgt variants for S2).
+  A global, on-by-default sidebar "Night redistribution" setting moves the
+  headlight-only `night` counts into bike/car/heavy using user-adjustable,
+  auto-normalised proportions and hides night entirely; switched off, the frame
+  is untouched and night appears as its own mode. The `motorised` group (Trends
+  "Trend modality" picker only) is just car + heavy.
 - Telraam data is CC BY-NC 4.0 — keep the attribution footer, no commercial use,
   aggregate-only exports
 - No browser in most agent containers: use `scripts/render_previews.py` to render

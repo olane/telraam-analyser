@@ -305,23 +305,45 @@ MODALITY_LABELS = {
     "night_rgt": "Night (right)",
 }
 
-# Default assumed share of ``night`` headlight detections that are motorised
-# rather than bikes. The camera cannot classify at night, so night is all
-# headlights; this scales the night contribution inside ``motorised`` to the
-# estimated non-bike portion. User-adjustable; could later be derived from
-# daytime bike/motorised shares.
-NIGHT_MOTORISED_SHARE_DEFAULT = 0.85
+# Categories the unclassified ``night`` headlight counts are moved into when
+# redistribution is enabled. Pedestrians are deliberately excluded: at night
+# the camera sees headlights only, so the targets are the vehicle modes.
+NIGHT_DISTRIBUTION_TARGETS = ("bike", "car", "heavy")
 
-# Aggregate modalities and the weighted component columns they sum. Night is
-# scaled by the assumed motorised share so the unclassified bike portion is not
-# reported as motorised. Components stay separate columns of their own.
+# Default assumed split of night headlights across those categories. These are
+# relative weights, normalised to sum to 1 when applied.
+NIGHT_DISTRIBUTION_DEFAULT: dict[str, float] = {
+    "bike": 0.15,
+    "car": 0.85,
+    "heavy": 0.0,
+}
+
+# Aggregate modalities and the component columns they sum. Components stay
+# separate columns of their own; ``motorised`` intentionally ignores night,
+# which is either shown on its own or redistributed before aggregation.
 MODALITY_GROUPS: dict[str, dict[str, float]] = {
     "motorised": {
         "car": 1.0,
         "heavy": 1.0,
-        "night": NIGHT_MOTORISED_SHARE_DEFAULT,
     },
 }
+
+
+@dataclass
+class NightRedistribution:
+    """Whether to move unclassified night counts into other categories.
+
+    When *enabled*, :func:`analysis.filters.redistribute_night` adds each
+    night count to the target categories in proportion to *shares* and drops
+    the night columns, so night no longer appears. When disabled the frame is
+    left untouched and night is shown as its own mode.
+    """
+
+    enabled: bool = True
+    shares: dict[str, float] = field(
+        default_factory=lambda: dict(NIGHT_DISTRIBUTION_DEFAULT)
+    )
+
 
 # S2 direction split variants carry a left/right suffix; their base column is
 # the sum of the two, so selecting both would double count.

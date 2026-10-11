@@ -12,6 +12,7 @@ from analysis.filters import (
     filter_time_of_day,
     label_periods,
     mark_exclusions,
+    redistribute_night,
 )
 from analysis.grouping import add_comparison_group
 from domain.models import (
@@ -19,6 +20,7 @@ from domain.models import (
     ComparisonMode,
     Exclusion,
     FilterSettings,
+    NightRedistribution,
     PeriodInstance,
 )
 
@@ -30,11 +32,14 @@ def prepare_frame(
     instances: list[PeriodInstance],
     comparison: ComparisonConfig,
     keep_only_assigned: bool = False,
+    night: NightRedistribution | None = None,
 ) -> pd.DataFrame:
     """Apply exclusions, filters, period labels and the comparison group.
 
     The roadworks axis keeps excluded rows (flagging them) so they can be
-    compared against the baseline; every other axis drops them.
+    compared against the baseline; every other axis drops them. Night handling
+    is applied here so every view sees the same frame: when enabled, night
+    counts are redistributed into the other modalities and night disappears.
     """
     if df is None or df.empty:
         return pd.DataFrame()
@@ -45,6 +50,8 @@ def prepare_frame(
 
     df = filter_time_of_day(df, filters.start_hour, filters.end_hour)
     df = filter_days_of_week(df, filters.selected_days)
+    if night is not None and night.enabled:
+        df = redistribute_night(df, night.shares)
     df = label_periods(df, instances)
     df = add_comparison_group(df, comparison)
 
