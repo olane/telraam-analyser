@@ -43,7 +43,7 @@ DEFAULT_MODALITIES = ("pedestrian", "bike", "car", "heavy", "night")
 # Views that group the loaded frame into comparison buckets. Trends marks raw
 # calendar periods instead, so it gets a "Mark periods" control rather than
 # the comparison axis.
-GROUPING_PAGES = ("Overview", "Compare", "Detail")
+GROUPING_PAGES = ("Compare", "Detail")
 TRENDS_PAGE = "Trends"
 
 # Range presets in days. ``None`` means "everything since the API's earliest

@@ -12,7 +12,6 @@ st.set_page_config(
 
 import views.compare as compare  # noqa: E402
 import views.detail as detail  # noqa: E402
-import views.overview as overview  # noqa: E402
 import views.trends as trends  # noqa: E402
 from charts import register_template  # noqa: E402
 from config import Config  # noqa: E402
@@ -35,17 +34,11 @@ init_state(config)
 
 pages = [
     st.Page(
-        overview.render,
-        title="Overview",
-        url_path="overview",
-        icon=":material/dashboard:",
-        default=True,
-    ),
-    st.Page(
         trends.render,
         title="Trends",
         url_path="trends",
         icon=":material/trending_up:",
+        default=True,
     ),
     st.Page(
         compare.render,

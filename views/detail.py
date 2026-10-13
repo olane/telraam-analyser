@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pandas as pd
 import streamlit as st
 
 from analysis import (
@@ -32,6 +33,22 @@ def render() -> None:
     period_summary(
         controls.instances, caption="Periods marked on the trend charts."
     )
+
+    if controls.exclusions:
+        st.subheader("Excluded ranges")
+        st.dataframe(
+            pd.DataFrame(
+                [
+                    {
+                        "Label": e.label,
+                        "Ranges": ", ".join(f"{s} → {d}" for s, d in e.ranges),
+                    }
+                    for e in controls.exclusions
+                ]
+            ),
+            use_container_width=True,
+            hide_index=True,
+        )
 
     grouped = prepared_df(keep_only_assigned=True)
     if grouped.empty:

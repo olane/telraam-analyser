@@ -11,7 +11,6 @@ def _view_script() -> None:
 
     import views.compare as compare
     import views.detail as detail
-    import views.overview as overview
     import views.trends as trends
     from domain.models import (
         Exclusion,
@@ -53,29 +52,13 @@ def _view_script() -> None:
         df=df,
     )
 
-    for view in (overview, trends, compare, detail):
+    for view in (trends, compare, detail):
         view.render()
 
 
 def test_views_render_without_exception():
     at = AppTest.from_function(_view_script, default_timeout=30).run()
     assert not at.exception
-
-
-def test_overview_leads_with_comparison_kpis():
-    at = AppTest.from_function(_view_script, default_timeout=30).run()
-    assert not at.exception
-    labels = [metric.label for metric in at.metric]
-    assert "Mean daily count" in labels
-    # One card per comparison group follows the overall mean.
-    assert "Term time" in labels
-    assert "School holidays" in labels
-    assert len(at.metric) >= 3
-    # The non-baseline comparison card carries a percentage delta.
-    assert any(metric.delta for metric in at.metric)
-    # Internal download counters are demoted to a caption, not KPI cards.
-    assert "Hourly rows" not in labels
-    assert "Groups" not in labels
 
 
 def test_compare_renders_headline_kpis_for_every_group():
