@@ -26,13 +26,16 @@ from guard import BudgetExceeded, DailyRequestBudget
 
 @dataclass
 class Controls:
-    """Everything the views need, computed once per rerun."""
+    """Everything the views need, computed once per rerun.
+
+    The comparison axis is page-local (see ui/grouping.py), so it is not part
+    of Controls: only Trends' marked ``instances`` still come from the sidebar.
+    """
 
     segment_id: str
     filters: FilterSettings
     exclusions: list[Exclusion]
     instances: list[PeriodInstance]
-    comparison: ComparisonConfig = field(default_factory=ComparisonConfig)
     night: NightRedistribution = field(default_factory=NightRedistribution)
     df: pd.DataFrame = field(default_factory=pd.DataFrame)
     error: str | None = None
@@ -133,7 +136,7 @@ def prepared_df(
         controls.filters,
         controls.exclusions,
         instances if instances is not None else controls.instances,
-        comparison if comparison is not None else controls.comparison,
+        comparison if comparison is not None else ComparisonConfig(),
         keep_only_assigned=keep_only_assigned,
         night=controls.night,
     )
