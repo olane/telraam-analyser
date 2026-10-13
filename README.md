@@ -158,7 +158,8 @@ Data access (api_client.py + cache.py) → Telraam REST API + parquet cache
 - `analysis/` — pure functions (DataFrame in, DataFrame out): filters,
   aggregates, weekday alignment, trends, comparison recipes.
 - `charts/` — Plotly figure builders.
-- `ui/` — theme, session state, sidebar controls, reusable components.
+- `ui/` — theme, session state, sidebar controls, the in-page comparison axis,
+  reusable components.
 - `views/` — one module per page (Trends, Compare, Detail).
 - Data layer — never called directly from views.
 

@@ -16,18 +16,13 @@ from analysis import (
     WEEKDAY_LABELS,
     dedupe_modalities,
     get_available_modalities,
-    resolve,
 )
 from domain.models import (
-    HOLIDAY_KINDS,
     NIGHT_DISTRIBUTION_DEFAULT,
     NIGHT_DISTRIBUTION_TARGETS,
     Calendar,
-    ComparisonConfig,
-    ComparisonMode,
     Exclusion,
     FilterSettings,
-    InterventionFilter,
     NightRedistribution,
     PeriodInstance,
     PeriodKind,
@@ -40,10 +35,8 @@ from ui.state import Controls, ensure_data
 
 DEFAULT_MODALITIES = ("pedestrian", "bike", "car", "heavy", "night")
 
-# Views that group the loaded frame into comparison buckets. Trends marks raw
-# calendar periods instead, so it gets a "Mark periods" control rather than
-# the comparison axis.
-GROUPING_PAGES = ("Compare", "Detail")
+# Trends marks raw calendar periods for shading; the comparison pages own their
+# own in-page "Group charts by" axis (see ui/grouping.py).
 TRENDS_PAGE = "Trends"
 
 # Range presets in days. ``None`` means "everything since the API's earliest
@@ -96,73 +89,6 @@ def _load(segment_id: str, start: date, end: date) -> tuple[pd.DataFrame | None,
     elif df is not None and not df.empty:
         st.sidebar.caption(f"{len(df):,} hourly rows loaded")
     return df, error
-
-
-def _grouping(calendar: Calendar, page_title: str) -> ComparisonConfig:
-    """Choose the comparison axis used to group the comparison charts."""
-    if page_title not in GROUPING_PAGES:
-        return ComparisonConfig()
-
-    mode = st.sidebar.selectbox(
-        "Group charts by",
-        list(ComparisonMode),
-        format_func=lambda m: m.human,
-        help="How rows are grouped in the comparison charts. Changing this "
-        "does not re-download data.",
-    )
-    config = ComparisonConfig(mode=mode)
-
-    # Every academic year is always included; the loaded time range, not a
-    # year picker, decides which dates are actually analysed.
-    available_kinds = [k for k in HOLIDAY_KINDS if calendar.of_kind(k)]
-
-    if mode is ComparisonMode.YEAR_ON_YEAR:
-        if available_kinds:
-            config.kind = st.sidebar.selectbox(
-                "Holiday", available_kinds, format_func=lambda k: k.human
-            )
-            years_for_kind = {i.academic_year for i in calendar.of_kind(config.kind)}
-            if len(years_for_kind) < 2:
-                st.sidebar.warning(
-                    "Only one year has this holiday. Add another academic year "
-                    "in domain/calendars.py to compare year on year."
-                )
-        else:
-            st.sidebar.warning("No holidays defined in the calendar.")
-
-    elif mode is ComparisonMode.BEFORE_AFTER:
-        default_cutover = date.today() - timedelta(days=90)
-        config.cutover = st.sidebar.date_input(
-            "Intervention date", value=default_cutover
-        )
-        config.window_days = int(
-            st.sidebar.slider("Window (days each side)", 14, 180, 56, step=14)
-        )
-        config.include_previous_year = st.sidebar.checkbox(
-            "Also show the same window last year", value=False
-        )
-        config.date_filter = st.sidebar.selectbox(
-            "Dates to compare",
-            list(InterventionFilter),
-            format_func=lambda f: f.human,
-            help="Restrict both windows to term time or holidays so like is "
-            "compared with like. Holidays falling in a window are dropped "
-            "when only term dates are compared, and vice versa.",
-        )
-
-    elif mode is ComparisonMode.CUSTOM:
-        config.period_labels = st.sidebar.multiselect(
-            "Periods", calendar.labels()
-        )
-
-    elif mode is ComparisonMode.ROADWORKS:
-        if not st.session_state.get("exclusions"):
-            st.sidebar.info(
-                "Add an exclusion below to compare roadworks against the "
-                "baseline."
-            )
-
-    return config
 
 
 def _mark_periods(calendar: Calendar) -> list[PeriodInstance]:
@@ -338,13 +264,10 @@ def render_sidebar(config, calendar: Calendar, pages, current_page) -> Controls:
     _page_nav(pages)
 
     # -- View settings: how the loaded data is interpreted ----------------
+    # Only Trends still picks periods from the sidebar; the comparison pages
+    # render their own "Group charts by" axis inline.
     st.sidebar.subheader("View settings")
-    comparison = _grouping(calendar, page_title)
-    instances = (
-        _mark_periods(calendar)
-        if page_title == TRENDS_PAGE
-        else resolve(calendar, comparison)
-    )
+    instances = _mark_periods(calendar) if page_title == TRENDS_PAGE else []
 
     night = _night_redistribution(df)
     selected_modalities = _filters(df, hide_night=night.enabled)
@@ -366,7 +289,6 @@ def render_sidebar(config, calendar: Calendar, pages, current_page) -> Controls:
         filters=filters,
         exclusions=list(st.session_state["exclusions"]),
         instances=instances,
-        comparison=comparison,
         night=night,
         df=df if df is not None else pd.DataFrame(),
         error=error,

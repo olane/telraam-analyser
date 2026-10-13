@@ -10,7 +10,8 @@ from analysis import (
     compute_period_totals,
 )
 from ui.components import aggregate_table, csv_download, period_summary
-from ui.state import get_controls, prepared_df
+from ui.grouping import comparison_axis
+from ui.state import get_calendar, get_controls, prepared_df
 from ui.theme import page_header
 
 
@@ -30,9 +31,9 @@ def render() -> None:
         st.warning("Select at least one modality in the sidebar.")
         return
 
-    period_summary(
-        controls.instances, caption="Periods marked on the trend charts."
-    )
+    comparison, instances = comparison_axis(get_calendar(), "detail")
+
+    period_summary(instances, caption="Periods marked on the trend charts.")
 
     if controls.exclusions:
         st.subheader("Excluded ranges")
@@ -50,7 +51,9 @@ def render() -> None:
             hide_index=True,
         )
 
-    grouped = prepared_df(keep_only_assigned=True)
+    grouped = prepared_df(
+        keep_only_assigned=True, comparison=comparison, instances=instances
+    )
     if grouped.empty:
         st.info("No data matches the current comparison.")
         return

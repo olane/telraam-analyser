@@ -16,8 +16,9 @@ UI (app.py + ui/ + views/) → Analysis (analysis/) + Charts (charts/) → Domai
 - `analysis/` is pure: DataFrame in, DataFrame out, no I/O. Split into
   `filters`, `aggregates`, `align` (weekday), `trends`, `comparisons`.
 - `charts/` builds Plotly figures with a shared `theme.py`.
-- `ui/` holds theme/CSS, session state (`state.py`), sidebar (`controls.py`) and
-  reusable components. `views/` holds one `render()` per page.
+- `ui/` holds theme/CSS, session state (`state.py`), sidebar (`controls.py`),
+  the in-page comparison axis (`grouping.py`) and reusable components.
+  `views/` holds one `render()` per page.
 - Views never call the API directly.
 
 ## Running
@@ -39,7 +40,8 @@ Requires `TELRAAM_API_KEY` and `TELRAAM_SEGMENT_IDS` — from `.env` locally or
 - Download is decoupled from analysis: the sidebar picks a sensor + time range
   and fetches the whole range (cache-filled, budget-guarded); a comparison axis
   (`ComparisonMode`) then only groups the already-loaded data (via
-  `group_label`) and is shared by every view — never one bucket per period
+  `group_label`) — never one bucket per period. The axis control lives on the
+  pages that use it (Compare and Detail, via `ui/grouping.py`), not the sidebar
 - Comparison aggregations/charts take a `group_col` (default `period_label`),
   so the pure API stays backward compatible while views pass `group_label`
 - `analysis/pipeline.py::prepare_frame` is the pure frame-prep shared by views

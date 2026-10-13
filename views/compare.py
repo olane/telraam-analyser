@@ -25,19 +25,20 @@ from ui.components import (
     kpi_row,
     typical_week_heatmaps,
 )
-from ui.state import get_controls, prepared_df
+from ui.grouping import comparison_axis
+from ui.state import get_calendar, get_controls, prepared_df
 from ui.theme import page_header
 
 GROUP_COL = "group_label"
 
 
-def _intervention_context(controls, modalities: list[str]) -> None:
+def _intervention_context(controls, modalities, comparison, instances) -> None:
     """Trend over the loaded range with the compared windows shaded."""
-    full = prepared_df()
+    full = prepared_df(comparison=comparison, instances=instances)
     if full.empty:
         return
 
-    date_filter = controls.comparison.date_filter
+    date_filter = comparison.date_filter
     if date_filter is InterventionFilter.TERM_ONLY:
         detail = (
             "Only term-time dates inside each window are compared; the "
@@ -60,7 +61,7 @@ def _intervention_context(controls, modalities: list[str]) -> None:
     st.plotly_chart(
         plot_daily_trend(
             trend,
-            instances=controls.instances,
+            instances=instances,
             exclusions=controls.exclusions,
             title="Traffic trend around the intervention",
             rolling_label="7-day average",
@@ -69,7 +70,7 @@ def _intervention_context(controls, modalities: list[str]) -> None:
         key="compare_intervention_trend",
     )
 
-    empty = [i.label for i in controls.instances if i.n_days == 0]
+    empty = [i.label for i in instances if i.n_days == 0]
     if empty:
         st.warning(
             "The current date filter leaves no dates in: "
@@ -133,10 +134,14 @@ def render() -> None:
         "the **Modalities** filter in the left sidebar."
     )
 
-    if controls.comparison.mode is ComparisonMode.BEFORE_AFTER:
-        _intervention_context(controls, modalities)
+    comparison, instances = comparison_axis(get_calendar(), "compare")
 
-    df = prepared_df(keep_only_assigned=True)
+    if comparison.mode is ComparisonMode.BEFORE_AFTER:
+        _intervention_context(controls, modalities, comparison, instances)
+
+    df = prepared_df(
+        keep_only_assigned=True, comparison=comparison, instances=instances
+    )
     if df.empty:
         st.warning("No data matches the current filters or comparison.")
         return
@@ -146,7 +151,7 @@ def render() -> None:
 
     # Time-of-day bands cover different numbers of hours, so a single mean
     # daily figure per band is not comparable and adds no value here.
-    show_headline = controls.comparison.mode is not ComparisonMode.TIME_OF_DAY
+    show_headline = comparison.mode is not ComparisonMode.TIME_OF_DAY
     labels = (["Headline"] if show_headline else []) + [
         "Weekday",
         "Typical week",
@@ -181,7 +186,7 @@ def render() -> None:
             df,
             modalities,
             ALL_OPTION,
-            controls.comparison,
+            comparison,
             key_prefix="compare_typical",
         )
     idx += 1
