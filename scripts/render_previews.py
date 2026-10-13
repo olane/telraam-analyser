@@ -1,4 +1,4 @@
-"""Render preview images of the four views using the app's analysis layer.
+"""Render preview images of the three views using the app's analysis layer.
 
 Why this exists
 ---------------
@@ -19,7 +19,7 @@ Usage
 
 Future agents: run the command above, then reference the PNGs from a PR with
 raw GitHub URLs, e.g.
-https://raw.githubusercontent.com/<owner>/<repo>/<branch>/docs/screenshots/02_trends.png
+https://raw.githubusercontent.com/<owner>/<repo>/<branch>/docs/screenshots/01_trends.png
 """
 
 from __future__ import annotations
@@ -53,7 +53,6 @@ from analysis import (  # noqa: E402
     compute_weekday_totals,
     describe_instances,
     holiday_vs_term,
-    keep_assigned,
     label_periods,
     period_mean_daily,
     weekday_hour_matrix,
@@ -244,44 +243,8 @@ def styled_table(ax, rows, bbox, col_widths):
 
 
 # ---------------------------------------------------------------------------
-# The four views
+# The three views
 # ---------------------------------------------------------------------------
-
-def render_overview(out_dir: Path, dpi: int):
-    assigned = keep_assigned(label_periods(FRAME, holiday_vs_term(CAL)))
-    totals = compute_period_totals(assigned, MODALITIES)
-    mean_daily = period_mean_daily(assigned, MODALITIES)
-    overall = compute_daily_totals(assigned, MODALITIES)[MODALITIES].sum(axis=1).mean()
-
-    fig, ax = plt.subplots(figsize=(10, 5.6))
-    ax.axis("off")
-    ax.set_title("Telraam Traffic Explorer — Overview", loc="left",
-                 fontsize=16, fontweight="bold")
-
-    kpis = [
-        ("Mean daily count", f"{overall:,.0f}"),
-        ("Term time", f"{mean_daily['Term time']:,.0f}"),
-        ("School holidays", f"{mean_daily['School holidays']:,.0f}"),
-    ]
-    for i, (label, value) in enumerate(kpis):
-        x = 0.02 + i * 0.245
-        ax.add_patch(plt.Rectangle((x, 0.72), 0.22, 0.19, transform=ax.transAxes,
-                                   facecolor="#f7fafc", edgecolor="#e3e8ee"))
-        ax.text(x + 0.015, 0.86, label, transform=ax.transAxes, fontsize=9, color="#607d8b")
-        ax.text(x + 0.015, 0.77, value, transform=ax.transAxes, fontsize=16,
-                color="#0b6e99", fontweight="bold")
-
-    ax.text(0.02, 0.63, "Totals by period (selected modalities)", transform=ax.transAxes,
-            fontsize=11, fontweight="bold")
-    rows = [["Period", "Pedestrians", "Cycles", "Cars", "Heavy", "Total"]]
-    for _, row in totals.iterrows():
-        rows.append([
-            row.period_label, f"{row.pedestrian:,.0f}", f"{row.bike:,.0f}",
-            f"{row.car:,.0f}", f"{row.heavy:,.0f}", f"{row.total:,.0f}",
-        ])
-    styled_table(ax, rows, [0.02, 0.08, 0.96, 0.5], [0.28, 0.16, 0.14, 0.14, 0.14, 0.14])
-    save(fig, out_dir, "01_overview.png", dpi)
-
 
 def _term_grouped_assigned():
     """Rows bucketed as Term time vs School holidays (the default axis)."""
@@ -332,7 +295,7 @@ def render_trends(out_dir: Path, dpi: int):
 
     fig.suptitle("Telraam Traffic Explorer — Trends", x=0.02, ha="left",
                  fontsize=16, fontweight="bold")
-    save(fig, out_dir, "02_trends.png", dpi)
+    save(fig, out_dir, "01_trends.png", dpi)
 
 
 def render_compare(out_dir: Path, dpi: int):
@@ -425,7 +388,7 @@ def render_compare(out_dir: Path, dpi: int):
 
     fig.suptitle("Telraam Traffic Explorer — Compare (term time vs holidays)",
                  x=0.02, ha="left", fontsize=16, fontweight="bold")
-    save(fig, out_dir, "03_compare.png", dpi)
+    save(fig, out_dir, "02_compare.png", dpi)
 
 
 def render_detail(out_dir: Path, dpi: int):
@@ -481,7 +444,7 @@ def render_detail(out_dir: Path, dpi: int):
 
     fig.suptitle("Telraam Traffic Explorer — Detail", x=0.02, ha="left",
                  fontsize=16, fontweight="bold")
-    save(fig, out_dir, "04_detail.png", dpi)
+    save(fig, out_dir, "03_detail.png", dpi)
 
 
 def main() -> None:
@@ -495,7 +458,6 @@ def main() -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     print(f"Rendering previews (synthetic data) to {out_dir}")
 
-    render_overview(out_dir, args.dpi)
     render_trends(out_dir, args.dpi)
     render_compare(out_dir, args.dpi)
     render_detail(out_dir, args.dpi)

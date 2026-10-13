@@ -140,7 +140,7 @@ python scripts/render_previews.py --out /tmp/pv --dpi 110
 ```
 
 Reference the generated PNGs from a PR with raw GitHub URLs, e.g.
-`https://raw.githubusercontent.com/<owner>/<repo>/<branch>/docs/screenshots/02_trends.png`.
+`https://raw.githubusercontent.com/<owner>/<repo>/<branch>/docs/screenshots/01_trends.png`.
 
 ## Architecture
 
@@ -159,7 +159,7 @@ Data access (api_client.py + cache.py) → Telraam REST API + parquet cache
   aggregates, weekday alignment, trends, comparison recipes.
 - `charts/` — Plotly figure builders.
 - `ui/` — theme, session state, sidebar controls, reusable components.
-- `views/` — one module per page (Overview, Trends, Compare, Detail).
+- `views/` — one module per page (Trends, Compare, Detail).
 - Data layer — never called directly from views.
 
 ## Hosting notes
