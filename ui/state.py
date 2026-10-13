@@ -14,6 +14,7 @@ from cache import CacheManager, slice_frame
 from config import Config
 from domain.calendars import default_calendar
 from domain.models import (
+    Calendar,
     ComparisonConfig,
     Exclusion,
     FilterSettings,
@@ -109,15 +110,30 @@ def get_controls() -> Controls:
     return st.session_state["controls"]
 
 
-def prepared_df(keep_only_assigned: bool = False) -> pd.DataFrame:
-    """Apply exclusions, filters, period labels and the comparison group."""
+def get_calendar() -> Calendar:
+    """The active calendar, defaulting outside the app (e.g. in tests)."""
+    if "calendar" not in st.session_state:
+        st.session_state["calendar"] = default_calendar()
+    return st.session_state["calendar"]
+
+
+def prepared_df(
+    keep_only_assigned: bool = False,
+    comparison: ComparisonConfig | None = None,
+    instances: list[PeriodInstance] | None = None,
+) -> pd.DataFrame:
+    """Apply exclusions, filters, period labels and the comparison group.
+
+    Views that own an in-page comparison axis pass *comparison* and *instances*
+    explicitly; everyone else falls back to the sidebar's Controls.
+    """
     controls = get_controls()
     return prepare_frame(
         controls.df,
         controls.filters,
         controls.exclusions,
-        controls.instances,
-        controls.comparison,
+        instances if instances is not None else controls.instances,
+        comparison if comparison is not None else controls.comparison,
         keep_only_assigned=keep_only_assigned,
         night=controls.night,
     )

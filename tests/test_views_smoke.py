@@ -124,20 +124,11 @@ def test_trends_motorised_selection_renders():
 
 
 def _before_after_script() -> None:
-    from datetime import date
-
     import pandas as pd
     import streamlit as st
 
     import views.compare as compare
-    from analysis import resolve
-    from domain.calendars import default_calendar
-    from domain.models import (
-        ComparisonConfig,
-        ComparisonMode,
-        FilterSettings,
-        InterventionFilter,
-    )
+    from domain.models import ComparisonMode, FilterSettings
     from ui.state import Controls
 
     index = pd.date_range("2025-12-15", "2026-04-30 23:00", freq="h", tz="UTC")
@@ -147,26 +138,23 @@ def _before_after_script() -> None:
     df["car"] = 10.0
     df["heavy"] = 0.5
 
-    comparison = ComparisonConfig(
-        mode=ComparisonMode.BEFORE_AFTER,
-        cutover=date(2026, 2, 23),
-        window_days=56,
-        date_filter=InterventionFilter.TERM_ONLY,
-    )
     st.session_state["controls"] = Controls(
         segment_id="123",
         filters=FilterSettings(selected_modalities=["car", "bike"]),
         exclusions=[],
-        instances=resolve(default_calendar(), comparison),
-        comparison=comparison,
+        instances=[],
         df=df,
     )
+    # The axis now lives on the page, so seed its widget state directly.
+    st.session_state["compare_comparison_mode"] = ComparisonMode.BEFORE_AFTER
     compare.render()
 
 
 def test_before_after_compare_renders_context_trend():
     at = AppTest.from_function(_before_after_script, default_timeout=30).run()
     assert not at.exception
+    headers = [h.value for h in at.subheader]
+    assert "What is being compared" in headers
 
 
 def _time_of_day_script() -> None:
@@ -174,13 +162,7 @@ def _time_of_day_script() -> None:
     import streamlit as st
 
     import views.compare as compare
-    from analysis import resolve
-    from domain.calendars import default_calendar
-    from domain.models import (
-        ComparisonConfig,
-        ComparisonMode,
-        FilterSettings,
-    )
+    from domain.models import ComparisonMode, FilterSettings
     from ui.state import Controls
 
     index = pd.date_range("2025-12-15", "2026-04-30 23:00", freq="h", tz="UTC")
@@ -190,15 +172,14 @@ def _time_of_day_script() -> None:
     df["car"] = 10.0
     df["heavy"] = 0.5
 
-    comparison = ComparisonConfig(mode=ComparisonMode.TIME_OF_DAY)
     st.session_state["controls"] = Controls(
         segment_id="123",
         filters=FilterSettings(selected_modalities=["car", "bike"]),
         exclusions=[],
-        instances=resolve(default_calendar(), comparison),
-        comparison=comparison,
+        instances=[],
         df=df,
     )
+    st.session_state["compare_comparison_mode"] = ComparisonMode.TIME_OF_DAY
     compare.render()
 
 
@@ -219,22 +200,10 @@ def _trends_controls_script() -> None:
     import streamlit as st
 
     from domain.calendars import default_calendar
-    from ui.controls import _grouping, _mark_periods
+    from ui.controls import _mark_periods
 
     st.session_state.setdefault("exclusions", [])
-    calendar = default_calendar()
-    _grouping(calendar, "Trends")
-    _mark_periods(calendar)
-
-
-def _compare_controls_script() -> None:
-    import streamlit as st
-
-    from domain.calendars import default_calendar
-    from ui.controls import _grouping
-
-    st.session_state.setdefault("exclusions", [])
-    _grouping(default_calendar(), "Compare")
+    _mark_periods(default_calendar())
 
 
 def test_trends_hides_grouping_axis_but_offers_marking():
@@ -245,10 +214,10 @@ def test_trends_hides_grouping_axis_but_offers_marking():
     assert "Mark periods" in {box.label for box in at.multiselect}
 
 
-def test_comparison_pages_show_the_grouping_axis():
-    at = AppTest.from_function(_compare_controls_script, default_timeout=30).run()
+def test_comparison_pages_own_the_grouping_axis():
+    at = AppTest.from_function(_view_script, default_timeout=30).run()
     assert not at.exception
-    assert {box.label for box in at.selectbox} == {"Group charts by"}
+    assert "Group charts by" in {box.label for box in at.selectbox}
 
 
 def test_typical_week_groups_follow_the_comparison_axis():
