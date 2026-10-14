@@ -20,7 +20,12 @@ from charts import (
     plot_weekday_adjusted_trend,
 )
 from domain.models import modality_label
-from ui.components import ALL_OPTION, V85_DOCS_URL, csv_download
+from ui.components import (
+    ALL_OPTION,
+    V85_DOCS_URL,
+    csv_download,
+    require_modalities,
+)
 from ui.state import get_calendar, get_controls, prepared_df
 from ui.theme import page_header
 
@@ -31,17 +36,8 @@ def render() -> None:
         "How traffic moves through time, with holidays and exclusions marked.",
     )
     controls = get_controls()
-
-    if controls.error:
-        st.error(controls.error)
-        return
-    if controls.df is None or controls.df.empty:
-        st.info("No data loaded. Adjust the periods in the sidebar.")
-        return
-
-    modalities = controls.filters.selected_modalities
-    if not modalities:
-        st.warning("Select at least one modality in the sidebar.")
+    modalities = require_modalities(controls)
+    if modalities is None:
         return
 
     df = prepared_df()
