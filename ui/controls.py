@@ -25,7 +25,6 @@ from domain.models import (
     FilterSettings,
     NightRedistribution,
     PeriodInstance,
-    PeriodKind,
     base_of,
     is_directional,
     modality_label,
@@ -35,7 +34,7 @@ from ui.state import Controls, ensure_data
 
 DEFAULT_MODALITIES = ("pedestrian", "bike", "car", "heavy", "night")
 
-# Trends marks raw calendar periods for shading; the comparison pages own their
+# Trends marks calendar holidays for shading; the comparison pages own their
 # own in-page "Group charts by" axis (see ui/grouping.py).
 TRENDS_PAGE = "Trends"
 
@@ -92,22 +91,23 @@ def _load(segment_id: str, start: date, end: date) -> tuple[pd.DataFrame | None,
 
 
 def _mark_periods(calendar: Calendar) -> list[PeriodInstance]:
-    """Choose which calendar periods are shaded on the trend charts.
+    """Choose whether calendar holidays are shaded on the trend charts.
 
     Annotation is independent of the comparison axis, so Trends can keep
-    showing term boundaries and holiday bands while the other views group the
-    same data differently.
+    showing holiday bands while the other views group the same data
+    differently. Terms are not marked: filling every term band would tint
+    almost the whole timeline.
     """
-    kinds = [k for k in PeriodKind if calendar.of_kind(k)]
-    chosen = st.sidebar.multiselect(
-        "Mark periods",
-        kinds,
-        default=kinds,
-        format_func=lambda k: k.human,
-        help="Calendar periods shaded on the trend charts. Independent of how "
-        "the other views group the data.",
+    mark = st.sidebar.checkbox(
+        "Mark holidays",
+        value=True,
+        key="mark_holidays",
+        help="Shade school holiday periods on the trend charts. Independent of "
+        "how the other views group the data.",
     )
-    return [i for i in calendar.instances if i.kind in chosen]
+    if not mark:
+        return []
+    return [i for i in calendar.instances if i.kind.is_holiday]
 
 
 def _night_redistribution(df) -> NightRedistribution:

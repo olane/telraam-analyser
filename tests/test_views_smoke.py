@@ -211,7 +211,7 @@ def test_trends_hides_grouping_axis_but_offers_marking():
     assert not at.exception
     selectbox_labels = {box.label for box in at.selectbox}
     assert "Group charts by" not in selectbox_labels
-    assert "Mark periods" in {box.label for box in at.multiselect}
+    assert "Mark holidays" in {box.label for box in at.checkbox}
 
 
 def test_comparison_pages_own_the_grouping_axis():
