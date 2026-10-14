@@ -160,7 +160,6 @@ def plot_weekday_adjusted_trend(
     instances: list[PeriodInstance] | None = None,
     exclusions: list[Exclusion] | None = None,
     title: str = "Weekday-adjusted trend",
-    rolling_label: str = "28-day average",
     height: int = 420,
 ) -> go.Figure:
     if trend_df is None or trend_df.empty:
@@ -182,7 +181,7 @@ def plot_weekday_adjusted_trend(
             x=trend_df["day"],
             y=trend_df["rolling_residual"],
             mode="lines",
-            name=rolling_label,
+            name="28-day average",
             line=dict(color="#c46210", width=3),
         )
     )

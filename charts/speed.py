@@ -44,7 +44,6 @@ def plot_speed_distribution(
 def plot_speed_trend(
     trend_df: pd.DataFrame,
     unit: str = "mph",
-    rolling_label: str = "7-day average",
     height: int = 360,
 ) -> go.Figure:
     """Line chart: daily V85 with a trailing rolling mean."""
@@ -66,7 +65,7 @@ def plot_speed_trend(
             x=trend_df["day"],
             y=trend_df["rolling"],
             mode="lines",
-            name=rolling_label,
+            name="7-day average",
             line=dict(color=_TREND_COLOUR, width=3),
         )
     )

@@ -13,7 +13,6 @@ from domain.models import modality_label
 def plot_weekday_comparison(
     weekday_df: pd.DataFrame,
     modality: str,
-    value_label: str = "Mean daily count",
     height: int = 440,
     group_col: str = "period_label",
 ) -> go.Figure:
@@ -42,7 +41,7 @@ def plot_weekday_comparison(
     fig.update_layout(
         title=f"{modality_label(modality)} by weekday",
         barmode="group",
-        yaxis_title=value_label,
+        yaxis_title="Mean daily count",
         xaxis_title="Weekday",
         height=height,
         hovermode="x unified",
