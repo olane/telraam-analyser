@@ -14,6 +14,7 @@ from domain.models import (
     EXCLUDED_LABEL,
     HOLIDAY_KINDS,
     HOLIDAY_LABEL,
+    PREVIOUS_YEAR_LABEL,
     TERM_LABEL,
     TIME_OF_DAY_BANDS,
     WEEKDAY_LABEL,
@@ -26,9 +27,9 @@ from domain.models import (
 
 _HOLIDAY_VALUES = {kind.value for kind in HOLIDAY_KINDS}
 _BEFORE_AFTER_ORDER = (
-    "Before intervention",
-    "After intervention",
-    "Same window, previous year",
+    PeriodKind.INTERVENTION_BEFORE.human,
+    PeriodKind.INTERVENTION_AFTER.human,
+    PREVIOUS_YEAR_LABEL,
 )
 
 

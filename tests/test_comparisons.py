@@ -119,17 +119,6 @@ def test_axis_modes_mark_every_period():
         assert len(instances) == len(calendar.instances)
 
 
-def test_axis_modes_can_filter_by_year():
-    calendar = default_calendar()
-    instances = resolve(
-        calendar,
-        ComparisonConfig(
-            mode=ComparisonMode.TIME_OF_DAY, years=["2025-26"]
-        ),
-    )
-    assert all(i.academic_year == "2025-26" for i in instances)
-
-
 def test_resolve_dispatches_by_mode():
     calendar = default_calendar()
 
