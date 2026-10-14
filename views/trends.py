@@ -21,7 +21,7 @@ from charts import (
 )
 from domain.models import modality_label
 from ui.components import ALL_OPTION, V85_DOCS_URL, csv_download
-from ui.state import get_controls, prepared_df
+from ui.state import get_calendar, get_controls, prepared_df
 from ui.theme import page_header
 
 
@@ -60,6 +60,17 @@ def render() -> None:
         "of every mode selected in the sidebar.",
     )
     window = top_right.slider("Rolling average (days)", 3, 28, 7)
+    mark_holidays = top_right.checkbox(
+        "Mark holidays",
+        value=True,
+        key="trends_mark_holidays",
+        help="Shade school holiday periods on the trend charts.",
+    )
+    instances = (
+        [i for i in get_calendar().instances if i.kind.is_holiday]
+        if mark_holidays
+        else []
+    )
 
     if trend_choice in groups:
         df = add_derived_modalities(df)
@@ -77,7 +88,7 @@ def render() -> None:
     st.plotly_chart(
         plot_daily_trend(
             trend,
-            instances=controls.instances,
+            instances=instances,
             exclusions=controls.exclusions,
             title=f"Traffic trend — {trend_label}",
             rolling_label=f"{window}-day average",
@@ -95,7 +106,7 @@ def render() -> None:
     st.plotly_chart(
         plot_weekday_adjusted_trend(
             adjusted,
-            instances=controls.instances,
+            instances=instances,
             exclusions=controls.exclusions,
             title=f"Weekday-adjusted trend — {trend_label}",
         ),

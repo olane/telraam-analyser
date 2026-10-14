@@ -28,14 +28,14 @@ from guard import BudgetExceeded, DailyRequestBudget
 class Controls:
     """Everything the views need, computed once per rerun.
 
-    The comparison axis is page-local (see ui/grouping.py), so it is not part
-    of Controls: only Trends' marked ``instances`` still come from the sidebar.
+    Per-page axes are not part of Controls: the comparison pages own their
+    "Group charts by" axis (see ui/grouping.py) and Trends owns its holiday
+    marking, both rendered inline.
     """
 
     segment_id: str
     filters: FilterSettings
     exclusions: list[Exclusion]
-    instances: list[PeriodInstance]
     night: NightRedistribution = field(default_factory=NightRedistribution)
     df: pd.DataFrame = field(default_factory=pd.DataFrame)
     error: str | None = None
@@ -127,15 +127,14 @@ def prepared_df(
 ) -> pd.DataFrame:
     """Apply exclusions, filters, period labels and the comparison group.
 
-    Views that own an in-page comparison axis pass *comparison* and *instances*
-    explicitly; everyone else falls back to the sidebar's Controls.
+    Views that own an in-page axis pass *comparison* and *instances* explicitly.
     """
     controls = get_controls()
     return prepare_frame(
         controls.df,
         controls.filters,
         controls.exclusions,
-        instances if instances is not None else controls.instances,
+        instances if instances is not None else [],
         comparison if comparison is not None else ComparisonConfig(),
         keep_only_assigned=keep_only_assigned,
         night=controls.night,

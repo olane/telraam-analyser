@@ -20,11 +20,9 @@ from analysis import (
 from domain.models import (
     NIGHT_DISTRIBUTION_DEFAULT,
     NIGHT_DISTRIBUTION_TARGETS,
-    Calendar,
     Exclusion,
     FilterSettings,
     NightRedistribution,
-    PeriodInstance,
     base_of,
     is_directional,
     modality_label,
@@ -33,10 +31,6 @@ from ui.components import attribution_footer
 from ui.state import Controls, ensure_data
 
 DEFAULT_MODALITIES = ("pedestrian", "bike", "car", "heavy", "night")
-
-# Trends marks calendar holidays for shading; the comparison pages own their
-# own in-page "Group charts by" axis (see ui/grouping.py).
-TRENDS_PAGE = "Trends"
 
 # Range presets in days. ``None`` means "everything since the API's earliest
 # data"; ``CUSTOM_RANGE`` asks for explicit dates.
@@ -88,26 +82,6 @@ def _load(segment_id: str, start: date, end: date) -> tuple[pd.DataFrame | None,
     elif df is not None and not df.empty:
         st.sidebar.caption(f"{len(df):,} hourly rows loaded")
     return df, error
-
-
-def _mark_periods(calendar: Calendar) -> list[PeriodInstance]:
-    """Choose whether calendar holidays are shaded on the trend charts.
-
-    Annotation is independent of the comparison axis, so Trends can keep
-    showing holiday bands while the other views group the same data
-    differently. Terms are not marked: filling every term band would tint
-    almost the whole timeline.
-    """
-    mark = st.sidebar.checkbox(
-        "Mark holidays",
-        value=True,
-        key="mark_holidays",
-        help="Shade school holiday periods on the trend charts. Independent of "
-        "how the other views group the data.",
-    )
-    if not mark:
-        return []
-    return [i for i in calendar.instances if i.kind.is_holiday]
 
 
 def _night_redistribution(df) -> NightRedistribution:
@@ -250,9 +224,8 @@ def _page_nav(pages) -> None:
         )
 
 
-def render_sidebar(config, calendar: Calendar, pages, current_page) -> Controls:
+def render_sidebar(config, pages) -> Controls:
     st.sidebar.title("Telraam Explorer")
-    page_title = getattr(current_page, "title", "")
 
     # -- Data: sensor + download range -----------------------------------
     st.sidebar.subheader("Data")
@@ -264,11 +237,9 @@ def render_sidebar(config, calendar: Calendar, pages, current_page) -> Controls:
     _page_nav(pages)
 
     # -- View settings: how the loaded data is interpreted ----------------
-    # Only Trends still picks periods from the sidebar; the comparison pages
-    # render their own "Group charts by" axis inline.
+    # Filters and exclusions apply everywhere; the per-page axes (Trends'
+    # holiday marking, the comparison pages' "Group charts by") render inline.
     st.sidebar.subheader("View settings")
-    instances = _mark_periods(calendar) if page_title == TRENDS_PAGE else []
-
     night = _night_redistribution(df)
     selected_modalities = _filters(df, hide_night=night.enabled)
     _exclusions()
@@ -288,7 +259,6 @@ def render_sidebar(config, calendar: Calendar, pages, current_page) -> Controls:
         segment_id=segment_id,
         filters=filters,
         exclusions=list(st.session_state["exclusions"]),
-        instances=instances,
         night=night,
         df=df if df is not None else pd.DataFrame(),
         error=error,

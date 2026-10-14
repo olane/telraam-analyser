@@ -12,12 +12,7 @@ def _view_script() -> None:
     import views.compare as compare
     import views.detail as detail
     import views.trends as trends
-    from domain.models import (
-        Exclusion,
-        FilterSettings,
-        PeriodInstance,
-        PeriodKind,
-    )
+    from domain.models import Exclusion, FilterSettings
     from ui.state import Controls
 
     index = pd.date_range("2025-12-15", "2026-02-28 23:00", freq="h", tz="UTC")
@@ -27,28 +22,12 @@ def _view_script() -> None:
     df["car"] = 10.0
     df["heavy"] = 0.5
 
-    instances = [
-        PeriodInstance(
-            "Christmas", PeriodKind.CHRISTMAS,
-            ((date(2025, 12, 22), date(2026, 1, 2)),),
-        ),
-        PeriodInstance(
-            "Spring term", PeriodKind.TERM,
-            ((date(2026, 1, 5), date(2026, 1, 30)),),
-        ),
-        PeriodInstance(
-            "February half term", PeriodKind.FEB_HALF,
-            ((date(2026, 2, 16), date(2026, 2, 22)),),
-        ),
-    ]
-
     st.session_state["controls"] = Controls(
         segment_id="123",
         filters=FilterSettings(
             selected_modalities=["pedestrian", "bike", "car", "heavy"]
         ),
         exclusions=[Exclusion("Roadworks", ((date(2026, 1, 12), date(2026, 1, 16)),))],
-        instances=instances,
         df=df,
     )
 
@@ -80,13 +59,11 @@ def test_trends_modality_filter_offers_all():
 
 
 def _trends_group_script() -> None:
-    from datetime import date
-
     import pandas as pd
     import streamlit as st
 
     import views.trends as trends
-    from domain.models import FilterSettings, PeriodInstance, PeriodKind
+    from domain.models import FilterSettings
     from ui.state import Controls
 
     index = pd.date_range("2026-01-05", "2026-02-28 23:00", freq="h", tz="UTC")
@@ -97,18 +74,10 @@ def _trends_group_script() -> None:
     df["heavy"] = 0.5
     df["night"] = 1.0
 
-    instances = [
-        PeriodInstance(
-            "Spring term",
-            PeriodKind.TERM,
-            ((date(2026, 1, 5), date(2026, 1, 30)),),
-        ),
-    ]
     st.session_state["controls"] = Controls(
         segment_id="123",
         filters=FilterSettings(selected_modalities=["car", "heavy"]),
         exclusions=[],
-        instances=instances,
         df=df,
     )
     trends.render()
@@ -142,7 +111,6 @@ def _before_after_script() -> None:
         segment_id="123",
         filters=FilterSettings(selected_modalities=["car", "bike"]),
         exclusions=[],
-        instances=[],
         df=df,
     )
     # The axis now lives on the page, so seed its widget state directly.
@@ -176,7 +144,6 @@ def _time_of_day_script() -> None:
         segment_id="123",
         filters=FilterSettings(selected_modalities=["car", "bike"]),
         exclusions=[],
-        instances=[],
         df=df,
     )
     st.session_state["compare_comparison_mode"] = ComparisonMode.TIME_OF_DAY
@@ -196,18 +163,8 @@ def test_sidebar_defaults_to_all_time():
     assert DEFAULT_RANGE == "All time"
 
 
-def _trends_controls_script() -> None:
-    import streamlit as st
-
-    from domain.calendars import default_calendar
-    from ui.controls import _mark_periods
-
-    st.session_state.setdefault("exclusions", [])
-    _mark_periods(default_calendar())
-
-
 def test_trends_hides_grouping_axis_but_offers_marking():
-    at = AppTest.from_function(_trends_controls_script, default_timeout=30).run()
+    at = AppTest.from_function(_trends_group_script, default_timeout=30).run()
     assert not at.exception
     selectbox_labels = {box.label for box in at.selectbox}
     assert "Group charts by" not in selectbox_labels

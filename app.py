@@ -55,10 +55,7 @@ pages = [
 ]
 
 # Navigation is hidden and re-rendered as links inside the sidebar controls,
-# so the page can be chosen without leaving the sidebar. The selected page is
-# passed in so controls that only apply to some views can be hidden.
+# so the page can be chosen without leaving the sidebar.
 navigation = st.navigation(pages, position="hidden")
-st.session_state["controls"] = render_sidebar(
-    config, st.session_state["calendar"], pages, navigation
-)
+st.session_state["controls"] = render_sidebar(config, pages)
 navigation.run()
