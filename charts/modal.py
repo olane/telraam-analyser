@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 
-from charts.theme import legend_below, period_colour_map
+from charts.theme import empty_figure, legend_below, period_colour_map
 from domain.models import modality_label
 
 
@@ -17,8 +17,6 @@ def plot_modal_split(
 ) -> go.Figure:
     """Grouped bars: one bar per comparison group for each modality share."""
     if split_df is None or split_df.empty:
-        from charts.theme import empty_figure
-
         return empty_figure()
 
     groups = list(dict.fromkeys(split_df[group_col]))

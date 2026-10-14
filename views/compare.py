@@ -23,6 +23,7 @@ from ui.components import (
     ALL_OPTION,
     format_pct_change,
     kpi_row,
+    require_modalities,
     typical_week_heatmaps,
 )
 from ui.grouping import comparison_axis
@@ -116,17 +117,8 @@ def render() -> None:
         "Like weekdays against like weekdays, grouped by your comparison axis.",
     )
     controls = get_controls()
-
-    if controls.error:
-        st.error(controls.error)
-        return
-    if controls.df is None or controls.df.empty:
-        st.info("No data loaded. Adjust the periods in the sidebar.")
-        return
-
-    modalities = controls.filters.selected_modalities
-    if not modalities:
-        st.warning("Select at least one modality in the sidebar.")
+    modalities = require_modalities(controls)
+    if modalities is None:
         return
 
     st.caption(

@@ -8,6 +8,7 @@ from datetime import date, timedelta
 import pandas as pd
 
 from domain.models import (
+    PREVIOUS_YEAR_LABEL,
     Calendar,
     ComparisonConfig,
     ComparisonMode,
@@ -33,20 +34,15 @@ def aggregate(
 # Recipes
 # ---------------------------------------------------------------------------
 
-def holiday_vs_term(
-    calendar: Calendar, years: list[str] | None = None
-) -> list[PeriodInstance]:
+def holiday_vs_term(calendar: Calendar) -> list[PeriodInstance]:
     instances = calendar.instances
-    if years:
-        instances = [i for i in instances if i.academic_year in years]
-
     terms = [i for i in instances if i.kind.is_term]
     holidays = [i for i in instances if i.kind.is_holiday]
     out: list[PeriodInstance] = []
     if terms:
-        out.append(aggregate("Term time", PeriodKind.TERM, terms))
+        out.append(aggregate(PeriodKind.TERM.human, PeriodKind.TERM, terms))
     if holidays:
-        out.append(aggregate("School holidays", PeriodKind.HOLIDAY, holidays))
+        out.append(aggregate(PeriodKind.HOLIDAY.human, PeriodKind.HOLIDAY, holidays))
     return out
 
 
@@ -70,12 +66,12 @@ def build_before_after(
 
     instances = [
         PeriodInstance(
-            label="Before intervention",
+            label=PeriodKind.INTERVENTION_BEFORE.human,
             kind=PeriodKind.INTERVENTION_BEFORE,
             ranges=((before_start, before_end),),
         ),
         PeriodInstance(
-            label="After intervention",
+            label=PeriodKind.INTERVENTION_AFTER.human,
             kind=PeriodKind.INTERVENTION_AFTER,
             ranges=((after_start, after_end),),
         ),
@@ -85,7 +81,7 @@ def build_before_after(
         shift = timedelta(days=364)
         instances.append(
             PeriodInstance(
-                label="Same window, previous year",
+                label=PREVIOUS_YEAR_LABEL,
                 kind=PeriodKind.CUSTOM,
                 ranges=(
                     (before_start - shift, before_end - shift),
@@ -154,7 +150,7 @@ def resolve(
     mode = config.mode
 
     if mode is ComparisonMode.HOLIDAY_VS_TERM:
-        return holiday_vs_term(calendar, config.years or None)
+        return holiday_vs_term(calendar)
 
     if mode is ComparisonMode.YEAR_ON_YEAR:
         return year_on_year(calendar, config.kind or PeriodKind.CHRISTMAS)
@@ -184,10 +180,8 @@ def resolve(
 
     # Axis-only modes (weekday/weekend, time of day, roadworks) still mark
     # every calendar period so trend charts have their usual context bands.
-    instances = calendar.instances
-    if config.years:
-        instances = [i for i in instances if i.academic_year in config.years]
-    return list(instances)
+    # The loaded time range, not a year picker, decides which dates are analysed.
+    return list(calendar.instances)
 
 
 # ---------------------------------------------------------------------------

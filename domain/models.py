@@ -205,21 +205,22 @@ class ComparisonConfig:
     mode: ComparisonMode = ComparisonMode.HOLIDAY_VS_TERM
     period_labels: list[str] = field(default_factory=list)
     kind: PeriodKind | None = None
-    years: list[str] = field(default_factory=list)
     cutover: date | None = None
     window_days: int = 56
     include_previous_year: bool = False
     date_filter: InterventionFilter = InterventionFilter.ALL
 
 
-# Group labels shared by the comparison axes and their charts.
-TERM_LABEL = "Term time"
-NOT_TERM_LABEL = "Not term time"
-HOLIDAY_LABEL = "School holidays"
+# Group labels shared by the comparison axes and their charts. The term and
+# holiday labels reuse the period-kind labels so both stay in step; the
+# before/after axis labels likewise come from the intervention period kinds.
+TERM_LABEL = _KIND_LABELS[PeriodKind.TERM]
+HOLIDAY_LABEL = _KIND_LABELS[PeriodKind.HOLIDAY]
 WEEKDAY_LABEL = "Weekday"
 WEEKEND_LABEL = "Weekend"
 BASELINE_LABEL = "Baseline"
 EXCLUDED_LABEL = "Roadworks"
+PREVIOUS_YEAR_LABEL = "Same window, previous year"
 
 # Ordered day-part bands used by the time-of-day comparison axis. The bounds
 # are inclusive whole hours, so each label reads as a clock range with no gaps

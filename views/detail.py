@@ -9,26 +9,24 @@ from analysis import (
     compute_modal_split,
     compute_period_totals,
 )
-from ui.components import aggregate_table, csv_download, period_summary
+from ui.components import (
+    aggregate_table,
+    csv_download,
+    period_summary,
+    require_modalities,
+)
 from ui.grouping import comparison_axis
 from ui.state import get_calendar, get_controls, prepared_df
 from ui.theme import page_header
+
+GROUP_COL = "group_label"
 
 
 def render() -> None:
     page_header("Detail", "The periods, totals and shares behind the charts.")
     controls = get_controls()
-
-    if controls.error:
-        st.error(controls.error)
-        return
-    if controls.df is None or controls.df.empty:
-        st.info("No data loaded. Adjust the periods in the sidebar.")
-        return
-
-    modalities = controls.filters.selected_modalities
-    if not modalities:
-        st.warning("Select at least one modality in the sidebar.")
+    modalities = require_modalities(controls)
+    if modalities is None:
         return
 
     comparison, instances = comparison_axis(get_calendar(), "detail")
@@ -60,12 +58,12 @@ def render() -> None:
 
     st.divider()
     st.subheader("Totals by group")
-    totals = compute_period_totals(grouped, modalities, group_col="group_label")
+    totals = compute_period_totals(grouped, modalities, group_col=GROUP_COL)
     aggregate_table(totals, "Group", decimals=0)
     csv_download(totals, "period_totals.csv", "Download totals (CSV)")
 
     st.subheader("Modal split (%)")
-    split = compute_modal_split(grouped, modalities, group_col="group_label")
+    split = compute_modal_split(grouped, modalities, group_col=GROUP_COL)
     aggregate_table(split, "Group", decimals=1)
     csv_download(split, "modal_split.csv", "Download modal split (CSV)")
 

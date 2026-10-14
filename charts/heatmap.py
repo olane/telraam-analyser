@@ -5,6 +5,8 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 
+from charts.theme import empty_figure
+
 
 def plot_typical_week(
     matrix: pd.DataFrame,
@@ -13,8 +15,6 @@ def plot_typical_week(
 ) -> go.Figure:
     """Heatmap of weekday (rows) × hour (cols) average counts."""
     if matrix is None or matrix.empty:
-        from charts.theme import empty_figure
-
         return empty_figure()
 
     fig = go.Figure(

@@ -6,21 +6,18 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from analysis.align import WEEKDAY_LABELS
-from charts.theme import legend_below, period_colour_map
+from charts.theme import empty_figure, legend_below, period_colour_map
 from domain.models import modality_label
 
 
 def plot_weekday_comparison(
     weekday_df: pd.DataFrame,
     modality: str,
-    value_label: str = "Mean daily count",
     height: int = 440,
     group_col: str = "period_label",
 ) -> go.Figure:
     """Grouped bars: one bar per comparison group for each weekday."""
     if weekday_df is None or weekday_df.empty:
-        from charts.theme import empty_figure
-
         return empty_figure()
 
     groups = list(dict.fromkeys(weekday_df[group_col]))
@@ -44,7 +41,7 @@ def plot_weekday_comparison(
     fig.update_layout(
         title=f"{modality_label(modality)} by weekday",
         barmode="group",
-        yaxis_title=value_label,
+        yaxis_title="Mean daily count",
         xaxis_title="Weekday",
         height=height,
         hovermode="x unified",

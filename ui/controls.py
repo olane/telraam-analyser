@@ -143,8 +143,14 @@ def _night_redistribution(df) -> NightRedistribution:
     return NightRedistribution(enabled=enabled, shares=shares)
 
 
-def _filters(df, hide_night: bool = False) -> list[str]:
-    """Global filters applied by every view; returns selected modalities."""
+def _filters(
+    df, hide_night: bool = False
+) -> tuple[list[str], tuple[int, int], list[str]]:
+    """Global filters applied by every view.
+
+    Returns the selected modalities alongside the chosen hour range and day
+    labels so the caller can build a :class:`FilterSettings`.
+    """
     available = get_available_modalities(df) if df is not None else []
     if hide_night:
         available = [m for m in available if base_of(m) != "night"]
@@ -164,10 +170,8 @@ def _filters(df, hide_night: bool = False) -> list[str]:
 
     selected_variants: list[str] = []
     with st.sidebar.expander("Advanced filters"):
-        st.session_state["_hour_range"] = st.slider(
-            "Hours of day", 0, 23, (0, 23)
-        )
-        st.session_state["_day_labels"] = st.multiselect(
+        hour_range = st.slider("Hours of day", 0, 23, (0, 23))
+        day_labels = st.multiselect(
             "Days of week", WEEKDAY_LABELS, default=WEEKDAY_LABELS
         )
         if variants:
@@ -187,7 +191,8 @@ def _filters(df, hide_night: bool = False) -> list[str]:
                 )
 
     # Never sum a combined mode and its direction split together.
-    return dedupe_modalities(selected + list(selected_variants))
+    modalities = dedupe_modalities(selected + list(selected_variants))
+    return modalities, hour_range, day_labels
 
 
 def _exclusions() -> None:
@@ -241,11 +246,11 @@ def render_sidebar(config, pages) -> Controls:
     # holiday marking, the comparison pages' "Group charts by") render inline.
     st.sidebar.subheader("View settings")
     night = _night_redistribution(df)
-    selected_modalities = _filters(df, hide_night=night.enabled)
+    selected_modalities, hour_range, day_labels = _filters(
+        df, hide_night=night.enabled
+    )
     _exclusions()
 
-    hour_range = st.session_state.get("_hour_range", (0, 23))
-    day_labels = st.session_state.get("_day_labels", WEEKDAY_LABELS)
     filters = FilterSettings(
         start_hour=hour_range[0],
         end_hour=hour_range[1],

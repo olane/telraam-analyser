@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pandas as pd
 import streamlit as st
 
@@ -14,6 +16,9 @@ from analysis import (
 from charts import plot_typical_week
 from domain.models import ComparisonConfig, PeriodInstance, modality_label
 
+if TYPE_CHECKING:
+    from ui.state import Controls
+
 LICENSE_URL = "https://creativecommons.org/licenses/by-nc/4.0/"
 TELRAAM_URL = "https://telraam.net/"
 V85_DOCS_URL = "https://faq.telraam.net/en/article/14/speed-measurement-v85-explained"
@@ -21,6 +26,26 @@ V85_DOCS_URL = "https://faq.telraam.net/en/article/14/speed-measurement-v85-expl
 ALL_OPTION = "All"
 
 _GROUP_COLUMNS = ("group_label", "period_label")
+
+
+def require_modalities(controls: Controls) -> list[str] | None:
+    """Report why nothing can be shown and return the selected modalities.
+
+    Every view refuses to render without a fetch error, loaded data and at
+    least one selected modality. Returns the modality list, or None once a
+    message has been shown.
+    """
+    if controls.error:
+        st.error(controls.error)
+        return None
+    if controls.df is None or controls.df.empty:
+        st.info("No data loaded. Adjust the periods in the sidebar.")
+        return None
+    modalities = controls.filters.selected_modalities
+    if not modalities:
+        st.warning("Select at least one modality in the sidebar.")
+        return None
+    return modalities
 
 
 def humanise_aggregate(

@@ -5,7 +5,7 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 
-from charts.theme import KIND_COLOURS
+from charts.theme import KIND_COLOURS, empty_figure
 from domain.models import Exclusion, PeriodInstance
 
 
@@ -120,8 +120,6 @@ def plot_daily_trend(
     height: int = 440,
 ) -> go.Figure:
     if trend_df is None or trend_df.empty:
-        from charts.theme import empty_figure
-
         return empty_figure()
 
     fig = go.Figure()
@@ -162,12 +160,9 @@ def plot_weekday_adjusted_trend(
     instances: list[PeriodInstance] | None = None,
     exclusions: list[Exclusion] | None = None,
     title: str = "Weekday-adjusted trend",
-    rolling_label: str = "28-day average",
     height: int = 420,
 ) -> go.Figure:
     if trend_df is None or trend_df.empty:
-        from charts.theme import empty_figure
-
         return empty_figure()
 
     fig = go.Figure()
@@ -186,7 +181,7 @@ def plot_weekday_adjusted_trend(
             x=trend_df["day"],
             y=trend_df["rolling_residual"],
             mode="lines",
-            name=rolling_label,
+            name="28-day average",
             line=dict(color="#c46210", width=3),
         )
     )
