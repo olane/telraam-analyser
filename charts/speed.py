@@ -5,6 +5,8 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 
+from charts.theme import empty_figure
+
 _DIST_COLOUR = "#0b6e99"
 _TREND_COLOUR = "#c46210"
 _TREND_FILL = "#b0bec5"
@@ -17,8 +19,6 @@ def plot_speed_distribution(
 ) -> go.Figure:
     """Single bar trace of speed-bin shares for the whole selection."""
     if speed_df is None or speed_df.empty:
-        from charts.theme import empty_figure
-
         return empty_figure()
 
     bin_cols = list(speed_df.columns)
@@ -49,8 +49,6 @@ def plot_speed_trend(
 ) -> go.Figure:
     """Line chart: daily V85 with a trailing rolling mean."""
     if trend_df is None or trend_df.empty:
-        from charts.theme import empty_figure
-
         return empty_figure()
 
     fig = go.Figure()

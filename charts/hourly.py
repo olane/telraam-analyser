@@ -5,7 +5,12 @@ from __future__ import annotations
 import pandas as pd
 import plotly.graph_objects as go
 
-from charts.theme import legend_below, modality_colour, period_colour_map
+from charts.theme import (
+    empty_figure,
+    legend_below,
+    modality_colour,
+    period_colour_map,
+)
 from domain.models import modality_label
 
 _DASH_STYLES = ["solid", "dash", "dot", "dashdot", "longdash", "longdashdot"]
@@ -20,8 +25,6 @@ def plot_hourly_profile(
 ) -> go.Figure:
     """Line chart: hour on x-axis, one trace per (group, modality)."""
     if profile_df is None or profile_df.empty:
-        from charts.theme import empty_figure
-
         return empty_figure()
 
     fig = go.Figure()

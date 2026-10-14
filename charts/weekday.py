@@ -6,7 +6,7 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from analysis.align import WEEKDAY_LABELS
-from charts.theme import legend_below, period_colour_map
+from charts.theme import empty_figure, legend_below, period_colour_map
 from domain.models import modality_label
 
 
@@ -19,8 +19,6 @@ def plot_weekday_comparison(
 ) -> go.Figure:
     """Grouped bars: one bar per comparison group for each weekday."""
     if weekday_df is None or weekday_df.empty:
-        from charts.theme import empty_figure
-
         return empty_figure()
 
     groups = list(dict.fromkeys(weekday_df[group_col]))
