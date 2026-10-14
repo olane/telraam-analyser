@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import date
 
+import pandas as pd
 import plotly.graph_objects as go
 
 from analysis.aggregates import (
@@ -67,12 +68,10 @@ def test_all_charts_render(make_df):
     typical = compute_typical_week(df, MODALITIES)
     matrix = weekday_hour_matrix(typical, "Christmas", "car")
 
-    speed_df = __import__("pandas").DataFrame(
-        {"0-10": [28.0], "10-20": [52.0], "20+": [20.0]}
-    )
-    speed_trend = __import__("pandas").DataFrame(
+    speed_df = pd.DataFrame({"0-10": [28.0], "10-20": [52.0], "20+": [20.0]})
+    speed_trend = pd.DataFrame(
         {
-            "day": __import__("pandas").date_range(
+            "day": pd.date_range(
                 "2026-01-01", periods=5, freq="D", tz="UTC"
             ),
             "v85": [29.0, 30.0, 29.5, 31.0, 30.5],
