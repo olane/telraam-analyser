@@ -36,6 +36,7 @@ from analysis.pipeline import prepare_frame
 from analysis.trends import (
     compute_daily_trend,
     daily_total_series,
+    rolling_mean,
     weekday_adjusted_trend,
 )
 
@@ -66,6 +67,7 @@ __all__ = [
     "prepare_frame",
     "redistribute_night",
     "resolve",
+    "rolling_mean",
     "weekday_adjusted_trend",
     "weekday_hour_matrix",
 ]
