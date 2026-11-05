@@ -185,6 +185,21 @@ def test_daily_histogram_can_split_weekday_and_weekend(make_df):
     assert by_type.loc[("Weekend", "400–499"), "at_or_above"] == 2
 
 
+def test_grouped_outputs_order_weekday_before_weekend(make_df):
+    # Start on Saturday: the first-seen group is Weekend, but categorical
+    # order should still put Weekday first.
+    df = add_day_type(make_df("2026-02-21", "2026-02-23 23:00", base=10.0))
+
+    hist = compute_daily_histogram(
+        df, "car", bin_width=100, group_col=DAY_TYPE_COL
+    )
+    summary = compute_daily_summary(df, "car", group_col=DAY_TYPE_COL)
+
+    expected = ["Weekday", "Weekend"]
+    assert list(dict.fromkeys(hist[DAY_TYPE_COL])) == expected
+    assert summary[DAY_TYPE_COL].tolist() == expected
+
+
 def test_daily_summary_splits_weekday_and_weekend(make_df):
     df = _weekday_weekend_frame(make_df)
     summary = compute_daily_summary(
