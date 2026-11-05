@@ -237,3 +237,49 @@ def test_typical_week_groups_follow_the_comparison_axis():
     assert weekday.loc["Sat"].isna().all()
     assert weekend.loc["Sat"].notna().all()
     assert weekend.loc["Mon"].isna().all()
+
+
+def test_distribution_summary_table_includes_a_total_row():
+    import pandas as pd
+
+    from views.distribution import _summary_display
+
+    summary = pd.DataFrame(
+        {
+            "day_type": ["Weekday", "Weekend"],
+            "days": [5, 2],
+            "total": [1200.0, 960.0],
+            "median": [240.0, 480.0],
+            "mean": [240.0, 480.0],
+            "std": [0.0, 0.0],
+        }
+    )
+    overall = pd.Series(
+        {
+            "days": 7,
+            "total": 2160.0,
+            "median": 240.0,
+            "mean": 308.571,
+            "std": 108.42,
+        }
+    )
+
+    display = _summary_display(summary, overall)
+
+    assert display.iloc[-1]["Day type"] == "Total"
+    assert display.iloc[-1]["Days"] == 7
+    assert display.iloc[-1]["Total"] == 2160.0
+    assert list(display.columns) == [
+        "Day type",
+        "Days",
+        "Total",
+        "Median / day",
+        "Mean / day",
+        "Std dev / day",
+    ]
+
+
+def test_sidebar_presets_include_year_to_date():
+    from ui.controls import RANGE_PRESETS, YEAR_TO_DATE
+
+    assert YEAR_TO_DATE in RANGE_PRESETS
