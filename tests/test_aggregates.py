@@ -3,6 +3,8 @@ from __future__ import annotations
 import math
 from datetime import date
 
+import pandas as pd
+
 from analysis.aggregates import (
     compute_daily_histogram,
     compute_daily_summary,
@@ -191,9 +193,25 @@ def test_daily_summary_splits_weekday_and_weekend(make_df):
 
     assert summary.loc["Weekday", "days"] == 5
     assert summary.loc["Weekday", "median"] == 240.0
+    assert summary.loc["Weekday", "std"] == 0.0
     assert summary.loc["Weekend", "days"] == 2
     assert summary.loc["Weekend", "median"] == 480.0
+    assert summary.loc["Weekend", "std"] == 0.0
 
     overall = compute_daily_summary(df, "car").iloc[0]
     assert overall["days"] == 7
     assert overall["median"] == 240.0
+    assert overall["std"] > 0
+
+
+def test_daily_summary_reports_population_standard_deviation():
+    df = pd.DataFrame(
+        {
+            "day": pd.date_range("2026-02-16", periods=3, freq="D", tz="UTC"),
+            "car": [100.0, 200.0, 300.0],
+        }
+    )
+
+    summary = compute_daily_summary(df, "car").iloc[0]
+
+    assert math.isclose(summary["std"], 81.6497, rel_tol=1e-4)

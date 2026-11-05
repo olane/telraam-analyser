@@ -157,7 +157,7 @@ def compute_daily_histogram(
     return pd.DataFrame(_histogram_rows(binned), columns=columns)
 
 
-_DAILY_SUMMARY_COLUMNS = ["days", "median", "mean"]
+_DAILY_SUMMARY_COLUMNS = ["days", "median", "mean", "std"]
 
 
 def compute_daily_summary(
@@ -165,7 +165,10 @@ def compute_daily_summary(
     modality: str,
     group_col: str | None = None,
 ) -> pd.DataFrame:
-    """Day counts and typical daily levels, optionally per group."""
+    """Day counts, typical daily levels and their spread, optionally per group.
+
+    The standard deviation treats the selected days as the full population.
+    """
     daily = compute_daily_values(df, modality, group_col=group_col)
     columns = ([group_col] if group_col else []) + _DAILY_SUMMARY_COLUMNS
     if daily.empty:
@@ -176,6 +179,7 @@ def compute_daily_summary(
             "days": int(values.size),
             "median": float(values.median()),
             "mean": float(values.mean()),
+            "std": float(values.std(ddof=0)),
         }
 
     if group_col:
