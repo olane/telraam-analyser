@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import pandas as pd
 import streamlit as st
 
 from analysis import (
@@ -86,16 +87,30 @@ def _kpi_cards(row, common_label: str | None = None) -> None:
     kpi_row(items)
 
 
-def _summary_display(summary):
-    return summary.rename(
+def _summary_display(summary, overall):
+    display = summary.rename(
         columns={
             DAY_TYPE_COL: "Day type",
             "days": "Days",
+            "total": "Total",
             "median": "Median / day",
             "mean": "Mean / day",
             "std": "Std dev / day",
         }
     )
+    total = pd.DataFrame(
+        [
+            {
+                "Day type": "Total",
+                "Days": int(overall["days"]),
+                "Total": overall["total"],
+                "Median / day": overall["median"],
+                "Mean / day": overall["mean"],
+                "Std dev / day": overall["std"],
+            }
+        ]
+    )
+    return pd.concat([display, total], ignore_index=True)
 
 
 def render() -> None:
@@ -169,12 +184,14 @@ def render() -> None:
 
     if split:
         st.subheader("Daily summary by day type")
+        display_summary = _summary_display(summary, overall)
         st.dataframe(
-            _summary_display(summary),
+            display_summary,
             use_container_width=True,
             hide_index=True,
             column_config={
                 "Days": st.column_config.NumberColumn(format="%d"),
+                "Total": st.column_config.NumberColumn(format="%d"),
                 "Median / day": st.column_config.NumberColumn(format="%.0f"),
                 "Mean / day": st.column_config.NumberColumn(format="%.0f"),
                 "Std dev / day": st.column_config.NumberColumn(format="%.0f"),
@@ -208,7 +225,7 @@ def render() -> None:
     csv_download(hist, "daily_distribution.csv", "Download distribution (CSV)")
     if split:
         csv_download(
-            _summary_display(summary),
+            display_summary,
             "daily_summary.csv",
             "Download summary (CSV)",
         )

@@ -38,7 +38,7 @@ trends. This app fills that gap.
   by default) and count how many days fall in each, for any mode or aggregate
   such as motorised vehicles. A cumulative line and table column show how many
   days are at or above each range, and weekdays and weekends can be split apart.
-  Summary stats include median, mean and standard deviation.
+  Summary stats include totals, median, mean and standard deviation.
 - **Exclusions** — drop roadworks, closures or other anomalies from analysis;
   excluded ranges are shown on the trend chart.
 - **Speed, modal split and hourly profiles** — a speed distribution and a V85

@@ -192,14 +192,17 @@ def test_daily_summary_splits_weekday_and_weekend(make_df):
     ).set_index(DAY_TYPE_COL)
 
     assert summary.loc["Weekday", "days"] == 5
+    assert summary.loc["Weekday", "total"] == 1200.0
     assert summary.loc["Weekday", "median"] == 240.0
     assert summary.loc["Weekday", "std"] == 0.0
     assert summary.loc["Weekend", "days"] == 2
+    assert summary.loc["Weekend", "total"] == 960.0
     assert summary.loc["Weekend", "median"] == 480.0
     assert summary.loc["Weekend", "std"] == 0.0
 
     overall = compute_daily_summary(df, "car").iloc[0]
     assert overall["days"] == 7
+    assert overall["total"] == 2160.0
     assert overall["median"] == 240.0
     assert overall["std"] > 0
 
@@ -214,4 +217,5 @@ def test_daily_summary_reports_population_standard_deviation():
 
     summary = compute_daily_summary(df, "car").iloc[0]
 
+    assert summary["total"] == 600.0
     assert math.isclose(summary["std"], 81.6497, rel_tol=1e-4)

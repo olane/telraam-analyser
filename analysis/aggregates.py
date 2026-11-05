@@ -157,7 +157,7 @@ def compute_daily_histogram(
     return pd.DataFrame(_histogram_rows(binned), columns=columns)
 
 
-_DAILY_SUMMARY_COLUMNS = ["days", "median", "mean", "std"]
+_DAILY_SUMMARY_COLUMNS = ["days", "total", "median", "mean", "std"]
 
 
 def compute_daily_summary(
@@ -177,6 +177,7 @@ def compute_daily_summary(
     def stats(values: pd.Series) -> dict:
         return {
             "days": int(values.size),
+            "total": float(values.sum()),
             "median": float(values.median()),
             "mean": float(values.mean()),
             "std": float(values.std(ddof=0)),

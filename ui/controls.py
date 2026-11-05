@@ -34,16 +34,19 @@ DEFAULT_MODALITIES = ("pedestrian", "bike", "car", "heavy", "night")
 
 # Range presets in days. ``None`` means "everything since the API's earliest
 # data"; ``CUSTOM_RANGE`` asks for explicit dates.
+CUSTOM_RANGE = "Custom range"
+YEAR_TO_DATE = "Year to date (YTD)"
+DEFAULT_RANGE = "All time"
+
 RANGE_PRESETS: dict[str, int | None] = {
     "Last 30 days": 30,
     "Last 90 days": 90,
     "Last 6 months": 182,
     "Last 12 months": 365,
+    YEAR_TO_DATE: -2,
     "All time": None,
-    "Custom range": -1,
+    CUSTOM_RANGE: -1,
 }
-CUSTOM_RANGE = "Custom range"
-DEFAULT_RANGE = "All time"
 
 
 def _date_range(config) -> tuple[date, date]:
@@ -61,11 +64,15 @@ def _date_range(config) -> tuple[date, date]:
         end = col_end.date_input("To", value=date.today(), key="range_end")
         return start, end + timedelta(days=1)
 
+    today = date.today()
+    end = today + timedelta(days=1)
+    if preset == YEAR_TO_DATE:
+        return date(today.year, 1, 1), end
+
     span = RANGE_PRESETS[preset]
-    end = date.today() + timedelta(days=1)
     if span is None:
         return config.earliest_data, end
-    return date.today() - timedelta(days=span - 1), end
+    return today - timedelta(days=span - 1), end
 
 
 def _load(segment_id: str, start: date, end: date) -> tuple[pd.DataFrame | None, str | None]:
