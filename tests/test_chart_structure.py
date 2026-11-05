@@ -27,6 +27,7 @@ from analysis.filters import keep_assigned, label_periods
 from analysis.trends import compute_daily_trend
 from charts import (
     empty_figure,
+    plot_daily_histogram,
     plot_daily_trend,
     plot_hourly_profile,
     plot_modal_split,
@@ -232,6 +233,58 @@ def test_speed_trend_has_daily_and_rolling_traces():
     fig = plot_speed_trend(trend_df)
     assert len(fig.data) == 2
     assert [t.name for t in fig.data] == ["Daily V85 (mph)", "7-day average"]
+
+
+def test_daily_histogram_has_bars_and_a_cumulative_line():
+    hist = pd.DataFrame(
+        {
+            "low": [0, 100, 200],
+            "high": [99, 199, 299],
+            "label": ["0–99", "100–199", "200–299"],
+            "days": [1, 2, 3],
+            "at_or_above": [6, 5, 3],
+        }
+    )
+
+    fig = plot_daily_histogram(hist, "car", bin_width=100)
+
+    bars, line = fig.data
+    assert bars.type == "bar"
+    assert list(bars.x) == ["0–99", "100–199", "200–299"]
+    assert list(bars.y) == [1, 2, 3]
+    assert line.type == "scatter"
+    assert line.yaxis == "y2"
+    assert list(line.y) == [6, 5, 3]
+
+
+def test_daily_histogram_can_compare_day_types():
+    hist = pd.DataFrame(
+        {
+            "day_type": ["Weekday", "Weekday", "Weekend", "Weekend"],
+            "low": [0, 100, 0, 100],
+            "high": [99, 199, 99, 199],
+            "label": ["0–99", "100–199", "0–99", "100–199"],
+            "days": [5, 0, 0, 2],
+            "at_or_above": [5, 0, 2, 2],
+        }
+    )
+
+    fig = plot_daily_histogram(hist, "car", group_col="day_type")
+
+    assert len(fig.data) == 4
+    assert [trace.type for trace in fig.data] == [
+        "bar",
+        "scatter",
+        "bar",
+        "scatter",
+    ]
+    assert [trace.name for trace in fig.data] == [
+        "Weekday",
+        "Weekday at or above",
+        "Weekend",
+        "Weekend at or above",
+    ]
+    assert fig.layout.barmode == "group"
 
 
 def test_empty_figure_has_placeholder_annotation():

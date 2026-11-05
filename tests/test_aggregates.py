@@ -4,15 +4,24 @@ import math
 from datetime import date
 
 from analysis.aggregates import (
+    compute_daily_histogram,
+    compute_daily_summary,
     compute_daily_totals,
     compute_modal_split,
     compute_period_totals,
     compute_speed_distribution,
     compute_speed_summary,
     compute_speed_trend,
+    daily_value_series,
     period_mean_daily,
 )
-from analysis.filters import keep_assigned, label_periods
+from analysis.filters import (
+    DAY_TYPE_COL,
+    add_day_type,
+    add_time_columns,
+    keep_assigned,
+    label_periods,
+)
 from domain.models import PeriodInstance, PeriodKind
 
 MODALITIES = ["pedestrian", "bike", "car", "heavy"]
@@ -105,3 +114,86 @@ def test_period_mean_daily_ignores_period_length(make_df):
 
     totals = compute_period_totals(labelled, MODALITIES).set_index("period_label")
     assert totals.loc["Short", "total"] < totals.loc["Long", "total"]
+
+
+def test_daily_histogram_counts_days_per_range(make_df):
+    df = add_time_columns(make_df("2026-02-16", "2026-02-18 23:00", base=10.0))
+
+    hist = compute_daily_histogram(df, "car", bin_width=100)
+
+    assert list(hist.columns) == [
+        "low",
+        "high",
+        "label",
+        "days",
+        "at_or_above",
+    ]
+    assert hist["label"].tolist() == ["0–99", "100–199", "200–299"]
+    assert hist["days"].tolist() == [0, 0, 3]
+    assert hist["at_or_above"].tolist() == [3, 3, 3]
+
+
+def test_daily_value_series_sums_one_category_per_day(make_df):
+    df = add_time_columns(make_df("2026-02-16", "2026-02-18 23:00", base=10.0))
+
+    daily = daily_value_series(df, "car")
+
+    assert len(daily) == 3
+    assert (daily == 240.0).all()
+
+
+def test_daily_histogram_is_empty_without_the_category(make_df):
+    df = add_time_columns(make_df("2026-02-16", "2026-02-18 23:00"))
+
+    hist = compute_daily_histogram(df, "night", bin_width=100)
+
+    assert hist.empty
+    assert list(hist.columns) == [
+        "low",
+        "high",
+        "label",
+        "days",
+        "at_or_above",
+    ]
+
+
+def _weekday_weekend_frame(make_df):
+    df = make_df(
+        "2026-02-16",
+        "2026-02-22 23:00",
+        base=10.0,
+        by_weekday={5: 2.0, 6: 2.0},
+    )
+    return add_day_type(df)
+
+
+def test_daily_histogram_can_split_weekday_and_weekend(make_df):
+    hist = compute_daily_histogram(
+        _weekday_weekend_frame(make_df),
+        "car",
+        bin_width=100,
+        group_col=DAY_TYPE_COL,
+    )
+    by_type = hist.set_index([DAY_TYPE_COL, "label"])
+
+    assert by_type.loc[("Weekday", "200–299"), "days"] == 5
+    assert by_type.loc[("Weekend", "400–499"), "days"] == 2
+    assert by_type.loc[("Weekday", "200–299"), "at_or_above"] == 5
+    assert by_type.loc[("Weekday", "300–399"), "at_or_above"] == 0
+    assert by_type.loc[("Weekend", "400–499"), "at_or_above"] == 2
+
+
+def test_daily_summary_splits_weekday_and_weekend(make_df):
+    df = _weekday_weekend_frame(make_df)
+    summary = compute_daily_summary(
+        df, "car", group_col=DAY_TYPE_COL
+    ).set_index(DAY_TYPE_COL)
+
+    assert summary.loc["Weekday", "days"] == 5
+    assert summary.loc["Weekday", "median"] == 240.0
+    assert summary.loc["Weekend", "days"] == 2
+    assert summary.loc["Weekend", "median"] == 480.0
+
+    overall = compute_daily_summary(df, "car").iloc[0]
+    assert overall["days"] == 7
+    assert overall["median"] == 240.0

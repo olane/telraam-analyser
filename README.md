@@ -34,6 +34,10 @@ trends. This app fills that gap.
 - **Compare** — weekday-aligned bars per modality selected in the sidebar,
   typical-week heatmaps broken down by the chosen comparison axis (one plot
   per group, e.g. weekday vs weekend), hourly profiles and modal split.
+- **Distribution** — bucket daily totals into fixed-width ranges (100 vehicles
+  by default) and count how many days fall in each, for any mode or aggregate
+  such as motorised vehicles. A cumulative line and table column show how many
+  days are at or above each range, and weekdays and weekends can be split apart.
 - **Exclusions** — drop roadworks, closures or other anomalies from analysis;
   excluded ranges are shown on the trend chart.
 - **Speed, modal split and hourly profiles** — a speed distribution and a V85
@@ -160,7 +164,7 @@ Data access (api_client.py + cache.py) → Telraam REST API + parquet cache
 - `charts/` — Plotly figure builders.
 - `ui/` — theme, session state, sidebar controls, the in-page comparison axis,
   reusable components.
-- `views/` — one module per page (Trends, Compare, Detail).
+- `views/` — one module per page (Trends, Compare, Distribution, Detail).
 - Data layer — never called directly from views.
 
 ## Hosting notes
