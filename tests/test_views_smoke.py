@@ -81,8 +81,8 @@ def test_distribution_removes_the_threshold_control():
     at = AppTest.from_function(_view_script, default_timeout=30).run()
     assert not at.exception
     labels = {control.label for control in at.number_input}
-    assert "Threshold (vehicles per day)" not in labels
-    assert "Range width (vehicles per day)" in labels
+    assert "Threshold (counts per day)" not in labels
+    assert "Range width (counts per day)" in labels
 
 
 def _trends_group_script() -> None:
@@ -269,6 +269,7 @@ def test_distribution_summary_table_includes_a_total_row():
     assert display.iloc[-1]["Day type"] == "Total"
     assert display.iloc[-1]["Days"] == 7
     assert display.iloc[-1]["Total"] == 2160.0
+    assert display.iloc[-1]["Total"] == display.iloc[:-1]["Total"].sum()
     assert list(display.columns) == [
         "Day type",
         "Days",
@@ -283,3 +284,50 @@ def test_sidebar_presets_include_year_to_date():
     from ui.controls import RANGE_PRESETS, YEAR_TO_DATE
 
     assert YEAR_TO_DATE in RANGE_PRESETS
+
+
+def test_year_to_date_preset_starts_on_new_year():
+    from datetime import date
+
+    from ui.controls import YEAR_TO_DATE, _preset_range
+
+    start, end = _preset_range(
+        YEAR_TO_DATE, date(2026, 11, 5), date(2021, 2, 1)
+    )
+    assert start == date(2026, 1, 1)
+    assert end == date(2026, 11, 6)
+
+
+def test_year_to_date_preset_respects_earliest_data():
+    from datetime import date
+
+    from ui.controls import YEAR_TO_DATE, _preset_range
+
+    start, _ = _preset_range(
+        YEAR_TO_DATE, date(2026, 11, 5), date(2026, 3, 1)
+    )
+    assert start == date(2026, 3, 1)
+
+
+def test_last_days_preset_includes_today():
+    from datetime import date
+
+    from ui.controls import _preset_range
+
+    start, end = _preset_range(
+        "Last 30 days", date(2026, 11, 5), date(2021, 2, 1)
+    )
+    assert start == date(2026, 10, 7)
+    assert end == date(2026, 11, 6)
+
+
+def test_all_time_preset_starts_at_earliest_data():
+    from datetime import date
+
+    from ui.controls import DEFAULT_RANGE, _preset_range
+
+    start, end = _preset_range(
+        DEFAULT_RANGE, date(2026, 11, 5), date(2021, 2, 1)
+    )
+    assert start == date(2021, 2, 1)
+    assert end == date(2026, 11, 6)

@@ -12,7 +12,8 @@ trends. This app fills that gap.
 
 - **Pick a sensor and a time range, then explore** — the sidebar downloads the
   whole selected range into the local parquet cache (rate limits excepted)
-  independently of how you analyse it. The comparison axis only groups the
+  independently of how you analyse it. Range presets run from the last 30 days
+  to year to date and all time. The comparison axis only groups the
   already-loaded data.
 - **Typed, calendar-aware periods** — school terms and holidays (Christmas,
   half terms, Easter, ...) are first-class, each tagged with a kind and an
@@ -34,7 +35,7 @@ trends. This app fills that gap.
 - **Compare** — weekday-aligned bars per modality selected in the sidebar,
   typical-week heatmaps broken down by the chosen comparison axis (one plot
   per group, e.g. weekday vs weekend), hourly profiles and modal split.
-- **Distribution** — bucket daily totals into fixed-width ranges (100 vehicles
+- **Distribution** — bucket daily totals into fixed-width ranges (100 per day
   by default) and count how many days fall in each, for any mode or aggregate
   such as motorised vehicles. A cumulative line and table column show how many
   days are at or above each range, and weekdays and weekends can be split apart.

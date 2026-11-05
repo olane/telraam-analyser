@@ -127,7 +127,8 @@ def compute_daily_histogram(
     Bins always start at zero, so labels read as ranges of counts (for
     example ``200–299``) rather than arbitrary boundaries. Empty bins are
     kept so the shape of the distribution is visible. When *group_col* is
-    given, every group shares the same bins so the counts are comparable.
+    given, every group shares the same bins so the counts are comparable, and
+    groups follow the column's categorical order (or are sorted by label).
     """
     if bin_width <= 0:
         raise ValueError("bin_width must be positive")
@@ -144,7 +145,7 @@ def compute_daily_histogram(
 
     if group_col:
         rows = []
-        for group, subset in daily.groupby(group_col, observed=True, sort=False):
+        for group, subset in daily.groupby(group_col, observed=True, sort=True):
             binned = pd.cut(
                 subset[modality], bins=edges, right=False, include_lowest=True
             )
@@ -168,6 +169,7 @@ def compute_daily_summary(
     """Day counts, typical daily levels and their spread, optionally per group.
 
     The standard deviation treats the selected days as the full population.
+    Groups follow the column's categorical order (or are sorted by label).
     """
     daily = compute_daily_values(df, modality, group_col=group_col)
     columns = ([group_col] if group_col else []) + _DAILY_SUMMARY_COLUMNS
@@ -185,7 +187,7 @@ def compute_daily_summary(
 
     if group_col:
         rows = []
-        for group, subset in daily.groupby(group_col, observed=True, sort=False):
+        for group, subset in daily.groupby(group_col, observed=True, sort=True):
             rows.append({group_col: group, **stats(subset[modality])})
         return pd.DataFrame(rows, columns=columns)
 

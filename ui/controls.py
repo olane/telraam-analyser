@@ -32,29 +32,50 @@ from ui.state import Controls, ensure_data
 
 DEFAULT_MODALITIES = ("pedestrian", "bike", "car", "heavy", "night")
 
-# Range presets in days. ``None`` means "everything since the API's earliest
-# data"; ``CUSTOM_RANGE`` asks for explicit dates.
 CUSTOM_RANGE = "Custom range"
 YEAR_TO_DATE = "Year to date (YTD)"
 DEFAULT_RANGE = "All time"
 
-RANGE_PRESETS: dict[str, int | None] = {
+# Ordered choices for the sidebar. Span-based presets use _SPAN_DAYS; the
+# special presets are resolved in _preset_range.
+RANGE_PRESETS: tuple[str, ...] = (
+    "Last 30 days",
+    "Last 90 days",
+    "Last 6 months",
+    "Last 12 months",
+    YEAR_TO_DATE,
+    DEFAULT_RANGE,
+    CUSTOM_RANGE,
+)
+
+_SPAN_DAYS: dict[str, int] = {
     "Last 30 days": 30,
     "Last 90 days": 90,
     "Last 6 months": 182,
     "Last 12 months": 365,
-    YEAR_TO_DATE: -2,
-    "All time": None,
-    CUSTOM_RANGE: -1,
 }
+
+
+def _preset_range(
+    preset: str, today: date, earliest_data: date
+) -> tuple[date, date]:
+    """Resolve a non-custom sidebar preset to a half-open date range."""
+    end = today + timedelta(days=1)
+    if preset == YEAR_TO_DATE:
+        return max(date(today.year, 1, 1), earliest_data), end
+
+    span = _SPAN_DAYS.get(preset)
+    if span is None:
+        return earliest_data, end
+    return today - timedelta(days=span - 1), end
 
 
 def _date_range(config) -> tuple[date, date]:
     """Sensor-independent date range to download, end exclusive."""
     preset = st.sidebar.selectbox(
         "Date range",
-        list(RANGE_PRESETS),
-        index=list(RANGE_PRESETS).index(DEFAULT_RANGE),
+        RANGE_PRESETS,
+        index=RANGE_PRESETS.index(DEFAULT_RANGE),
     )
 
     if preset == CUSTOM_RANGE:
@@ -64,15 +85,7 @@ def _date_range(config) -> tuple[date, date]:
         end = col_end.date_input("To", value=date.today(), key="range_end")
         return start, end + timedelta(days=1)
 
-    today = date.today()
-    end = today + timedelta(days=1)
-    if preset == YEAR_TO_DATE:
-        return date(today.year, 1, 1), end
-
-    span = RANGE_PRESETS[preset]
-    if span is None:
-        return config.earliest_data, end
-    return today - timedelta(days=span - 1), end
+    return _preset_range(preset, date.today(), config.earliest_data)
 
 
 def _load(segment_id: str, start: date, end: date) -> tuple[pd.DataFrame | None, str | None]:

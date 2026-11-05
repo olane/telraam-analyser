@@ -135,7 +135,7 @@ def render() -> None:
     with right:
         bin_width = int(
             st.number_input(
-                "Range width (vehicles per day)",
+                "Range width (counts per day)",
                 min_value=10,
                 max_value=5_000,
                 value=100,
@@ -176,9 +176,10 @@ def render() -> None:
     )
 
     st.caption(
-        "Each bar counts days by their total for the whole day; the dotted "
-        "line shows how many days are at or above each range. Days with "
-        "missing hours are counted from the hours that are present."
+        "Each bar counts days by their combined total across the selected "
+        "hours; the dotted line shows how many days are at or above each "
+        "range. Days with missing hours are counted from the hours that are "
+        "present."
     )
     _kpi_cards(overall, common_label)
 
