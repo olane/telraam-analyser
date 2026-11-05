@@ -1,13 +1,17 @@
 """Pure analysis layer: filtering, aggregation, alignment and comparisons."""
 
 from analysis.aggregates import (
+    compute_daily_histogram,
+    compute_daily_summary,
     compute_daily_totals,
+    compute_daily_values,
     compute_hourly_profile,
     compute_modal_split,
     compute_period_totals,
     compute_speed_distribution,
     compute_speed_summary,
     compute_speed_trend,
+    daily_value_series,
     period_mean_daily,
 )
 from analysis.align import (
@@ -22,6 +26,8 @@ from analysis.comparisons import (
     resolve,
 )
 from analysis.filters import (
+    DAY_TYPE_COL,
+    add_day_type,
     add_derived_modalities,
     add_time_columns,
     dedupe_modalities,
@@ -41,12 +47,17 @@ from analysis.trends import (
 )
 
 __all__ = [
+    "DAY_TYPE_COL",
     "WEEKDAY_LABELS",
     "add_comparison_group",
+    "add_day_type",
     "add_derived_modalities",
     "add_time_columns",
+    "compute_daily_histogram",
+    "compute_daily_summary",
     "compute_daily_totals",
     "compute_daily_trend",
+    "compute_daily_values",
     "compute_hourly_profile",
     "compute_modal_split",
     "compute_period_totals",
@@ -56,6 +67,7 @@ __all__ = [
     "compute_typical_week",
     "compute_weekday_totals",
     "daily_total_series",
+    "daily_value_series",
     "dedupe_modalities",
     "describe_instances",
     "get_available_groups",

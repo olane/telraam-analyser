@@ -1,4 +1,4 @@
-"""Render preview images of the three views using the app's analysis layer.
+"""Render preview images of the four views using the app's analysis layer.
 
 Why this exists
 ---------------
@@ -40,8 +40,12 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 
 from analysis import (  # noqa: E402
+    DAY_TYPE_COL,
     WEEKDAY_LABELS,
     add_comparison_group,
+    add_day_type,
+    compute_daily_histogram,
+    compute_daily_summary,
     compute_daily_totals,
     compute_daily_trend,
     compute_hourly_profile,
@@ -243,7 +247,7 @@ def styled_table(ax, rows, bbox, col_widths):
 
 
 # ---------------------------------------------------------------------------
-# The three views
+# The four views
 # ---------------------------------------------------------------------------
 
 def _term_grouped_assigned():
@@ -447,6 +451,94 @@ def render_detail(out_dir: Path, dpi: int):
     save(fig, out_dir, "03_detail.png", dpi)
 
 
+def render_distribution(out_dir: Path, dpi: int):
+    df = add_day_type(FRAME.assign(total=FRAME[MODALITIES].sum(axis=1)))
+    hist = compute_daily_histogram(
+        df, "total", bin_width=100, group_col=DAY_TYPE_COL
+    )
+    summary = compute_daily_summary(df, "total", group_col=DAY_TYPE_COL)
+    overall = compute_daily_summary(df, "total").iloc[0]
+
+    fig = plt.figure(figsize=(12, 11))
+    gs = fig.add_gridspec(
+        3, 1, height_ratios=[0.28, 0.3, 1], hspace=0.45
+    )
+
+    ax_kpi = fig.add_subplot(gs[0, :])
+    titled(ax_kpi, "Daily totals — all selected modalities")
+    kpi_cards(
+        ax_kpi,
+        [
+            ("Days counted", f"{int(overall['days']):,}", None),
+            ("Median / day", f"{overall['median']:,.0f}", None),
+            ("Mean / day", f"{overall['mean']:,.0f}", None),
+        ],
+    )
+
+    ax_table = fig.add_subplot(gs[1, :])
+    ax_table.axis("off")
+    titled(ax_table, "Daily summary by day type")
+    rows = [["Day type", "Days", "Median / day", "Mean / day"]]
+    for _, r in summary.iterrows():
+        rows.append([
+            r[DAY_TYPE_COL],
+            int(r["days"]),
+            f"{r['median']:,.0f}",
+            f"{r['mean']:,.0f}",
+        ])
+    styled_table(
+        ax_table, rows, [0.0, 0.05, 1.0, 0.75],
+        [0.25, 0.2, 0.25, 0.25],
+    )
+
+    ax = fig.add_subplot(gs[2])
+    ax_cum = ax.twinx()
+    labels = list(dict.fromkeys(hist["label"]))
+    groups = list(dict.fromkeys(hist[DAY_TYPE_COL]))
+    x = np.arange(len(labels))
+    for i, group in enumerate(groups):
+        subset = (
+            hist[hist[DAY_TYPE_COL] == group]
+            .set_index("label")
+            .reindex(labels)
+        )
+        colour = PERIOD_COLOURS[i % len(PERIOD_COLOURS)]
+        ax.bar(
+            x + (i - 0.5) * 0.38,
+            subset["days"],
+            0.38,
+            label=str(group),
+            color=colour,
+        )
+        ax_cum.plot(
+            x,
+            subset["at_or_above"],
+            color=colour,
+            lw=1.6,
+            ls=":",
+            marker="o",
+            ms=3,
+            label=f"{group} at or above",
+        )
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=8)
+    titled(ax, "Days per daily total range — weekdays vs weekends")
+    ax.set_xlabel("Vehicles per day (bin width 100)")
+    ax.set_ylabel("Number of days")
+    ax_cum.set_ylabel("Days at or above")
+    lines, labels_ = ax.get_legend_handles_labels()
+    ax.legend(lines, labels_, frameon=False, fontsize=8, loc="upper left")
+    ax.text(
+        0.99, 0.98, "dotted = days at or above",
+        transform=ax.transAxes, ha="right", va="top",
+        fontsize=8, color="#607d8b",
+    )
+
+    fig.suptitle("Telraam Traffic Explorer — Distribution", x=0.02, ha="left",
+                 fontsize=16, fontweight="bold")
+    save(fig, out_dir, "04_distribution.png", dpi)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", default=str(REPO / "docs" / "screenshots"),
@@ -461,6 +553,7 @@ def main() -> None:
     render_trends(out_dir, args.dpi)
     render_compare(out_dir, args.dpi)
     render_detail(out_dir, args.dpi)
+    render_distribution(out_dir, args.dpi)
     print("done")
 
 

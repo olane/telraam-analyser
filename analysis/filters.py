@@ -8,10 +8,14 @@ from domain.models import (
     MODALITY_GROUPS,
     MODALITY_ORDER,
     NIGHT_DISTRIBUTION_TARGETS,
+    WEEKDAY_LABEL,
+    WEEKEND_LABEL,
     Exclusion,
     PeriodInstance,
     is_directional,
 )
+
+DAY_TYPE_COL = "day_type"
 
 # ---------------------------------------------------------------------------
 # Column detection
@@ -137,6 +141,19 @@ def add_time_columns(df: pd.DataFrame) -> pd.DataFrame:
     df["hour"] = df.index.hour
     df["weekday"] = df.index.dayofweek
     df["day"] = df.index.normalize()
+    return df
+
+
+def add_day_type(df: pd.DataFrame) -> pd.DataFrame:
+    """Add an ordered Weekday/Weekend column from the weekday number."""
+    df = add_time_columns(df) if "weekday" not in df.columns else df.copy()
+    df[DAY_TYPE_COL] = pd.Categorical(
+        df["weekday"].map(
+            lambda day: WEEKEND_LABEL if day >= 5 else WEEKDAY_LABEL
+        ),
+        categories=[WEEKDAY_LABEL, WEEKEND_LABEL],
+        ordered=True,
+    )
     return df
 
 

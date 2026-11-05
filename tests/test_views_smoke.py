@@ -11,6 +11,7 @@ def _view_script() -> None:
 
     import views.compare as compare
     import views.detail as detail
+    import views.distribution as distribution
     import views.trends as trends
     from domain.models import Exclusion, FilterSettings
     from ui.state import Controls
@@ -31,7 +32,7 @@ def _view_script() -> None:
         df=df,
     )
 
-    for view in (trends, compare, detail):
+    for view in (trends, compare, distribution, detail):
         view.render()
 
 
@@ -56,6 +57,32 @@ def test_trends_modality_filter_offers_all():
     assert not at.exception
     boxes = {box.label: box for box in at.selectbox}
     assert "All" in boxes["Trend modality"].options
+
+
+def test_distribution_category_offers_aggregate_groups():
+    at = AppTest.from_function(_view_script, default_timeout=30).run()
+    assert not at.exception
+    box = at.selectbox(key="distribution_category")
+    assert "All selected modalities" in box.options
+    assert "Motorised vehicles" in box.options
+    box.select("motorised").run()
+    assert not at.exception
+
+
+def test_distribution_can_split_weekday_and_weekend():
+    at = AppTest.from_function(_view_script, default_timeout=30).run()
+    assert not at.exception
+    at.checkbox(key="distribution_split").check().run()
+    assert not at.exception
+    assert "Daily summary by day type" in [h.value for h in at.subheader]
+
+
+def test_distribution_removes_the_threshold_control():
+    at = AppTest.from_function(_view_script, default_timeout=30).run()
+    assert not at.exception
+    labels = {control.label for control in at.number_input}
+    assert "Threshold (vehicles per day)" not in labels
+    assert "Range width (vehicles per day)" in labels
 
 
 def _trends_group_script() -> None:

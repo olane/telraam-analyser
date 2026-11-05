@@ -6,7 +6,7 @@ import json
 
 import pandas as pd
 
-from analysis.filters import get_speed_hist_columns
+from analysis.filters import add_time_columns, get_speed_hist_columns
 
 # ---------------------------------------------------------------------------
 # Basic aggregations
@@ -67,6 +67,124 @@ def period_mean_daily(
         return pd.Series(dtype=float, name="mean_daily")
     daily = daily.assign(total=daily[modalities].sum(axis=1))
     return daily.groupby(group_col, observed=True)["total"].mean().rename("mean_daily")
+
+
+def compute_daily_values(
+    df: pd.DataFrame, modality: str, group_col: str | None = None
+) -> pd.DataFrame:
+    """One row per day (or per group and day) with a single daily total."""
+    columns = ([group_col] if group_col else []) + ["day", modality]
+    if df is None or df.empty or modality not in df.columns:
+        return pd.DataFrame(columns=columns)
+    if "day" not in df.columns:
+        df = add_time_columns(df)
+    keys = [group_col, "day"] if group_col else ["day"]
+    daily = df.groupby(keys, observed=True)[modality].sum().reset_index()
+    return daily.dropna(subset=[modality])
+
+
+def daily_value_series(df: pd.DataFrame, modality: str) -> pd.Series:
+    """Total of one column per day, indexed by day."""
+    daily = compute_daily_values(df, modality)
+    if daily.empty:
+        return pd.Series(dtype=float, name=modality)
+    return daily.set_index("day")[modality].rename(modality)
+
+
+_HISTOGRAM_COLUMNS = ["low", "high", "label", "days", "at_or_above"]
+
+
+def _histogram_rows(binned: pd.Series) -> list[dict]:
+    counts = binned.value_counts(sort=False)
+    rows = []
+    for interval in binned.cat.categories:
+        low = int(interval.left)
+        high = int(interval.right) - 1
+        rows.append(
+            {
+                "low": low,
+                "high": high,
+                "label": f"{low:,}–{high:,}",
+                "days": int(counts.get(interval, 0)),
+            }
+        )
+
+    total = 0
+    for row in reversed(rows):
+        total += row["days"]
+        row["at_or_above"] = total
+    return rows
+
+
+def compute_daily_histogram(
+    df: pd.DataFrame,
+    modality: str,
+    bin_width: int = 100,
+    group_col: str | None = None,
+) -> pd.DataFrame:
+    """Count days whose daily total falls into each fixed-width range.
+
+    Bins always start at zero, so labels read as ranges of counts (for
+    example ``200–299``) rather than arbitrary boundaries. Empty bins are
+    kept so the shape of the distribution is visible. When *group_col* is
+    given, every group shares the same bins so the counts are comparable.
+    """
+    if bin_width <= 0:
+        raise ValueError("bin_width must be positive")
+
+    daily = compute_daily_values(df, modality, group_col=group_col)
+    columns = ([group_col] if group_col else []) + _HISTOGRAM_COLUMNS
+    if daily.empty:
+        return pd.DataFrame(columns=columns)
+
+    # Make the last edge strictly above the busiest day so every value falls
+    # into a [low, high) bin.
+    upper = (int(daily[modality].max()) // bin_width + 1) * bin_width
+    edges = list(range(0, upper + 1, bin_width))
+
+    if group_col:
+        rows = []
+        for group, subset in daily.groupby(group_col, observed=True, sort=False):
+            binned = pd.cut(
+                subset[modality], bins=edges, right=False, include_lowest=True
+            )
+            rows.extend({group_col: group, **row} for row in _histogram_rows(binned))
+        return pd.DataFrame(rows, columns=columns)
+
+    binned = pd.cut(
+        daily[modality], bins=edges, right=False, include_lowest=True
+    )
+    return pd.DataFrame(_histogram_rows(binned), columns=columns)
+
+
+_DAILY_SUMMARY_COLUMNS = ["days", "median", "mean"]
+
+
+def compute_daily_summary(
+    df: pd.DataFrame,
+    modality: str,
+    group_col: str | None = None,
+) -> pd.DataFrame:
+    """Day counts and typical daily levels, optionally per group."""
+    daily = compute_daily_values(df, modality, group_col=group_col)
+    columns = ([group_col] if group_col else []) + _DAILY_SUMMARY_COLUMNS
+    if daily.empty:
+        return pd.DataFrame(columns=columns)
+
+    def stats(values: pd.Series) -> dict:
+        return {
+            "days": int(values.size),
+            "median": float(values.median()),
+            "mean": float(values.mean()),
+        }
+
+    if group_col:
+        rows = []
+        for group, subset in daily.groupby(group_col, observed=True, sort=False):
+            rows.append({group_col: group, **stats(subset[modality])})
+        return pd.DataFrame(rows, columns=columns)
+
+    return pd.DataFrame([stats(daily[modality])], columns=columns)
 
 
 # ---------------------------------------------------------------------------
