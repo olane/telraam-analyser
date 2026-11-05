@@ -69,6 +69,11 @@ def _kpi_cards(row, common_label: str | None = None) -> None:
             "value": f"{row['mean']:,.0f}",
             "help": "Average daily total across the selected days.",
         },
+        {
+            "label": "Std dev / day",
+            "value": f"{row['std']:,.0f}",
+            "help": "Spread of daily totals across the selected days.",
+        },
     ]
     if common_label is not None:
         items.append(
@@ -88,6 +93,7 @@ def _summary_display(summary):
             "days": "Days",
             "median": "Median / day",
             "mean": "Mean / day",
+            "std": "Std dev / day",
         }
     )
 
@@ -171,6 +177,7 @@ def render() -> None:
                 "Days": st.column_config.NumberColumn(format="%d"),
                 "Median / day": st.column_config.NumberColumn(format="%.0f"),
                 "Mean / day": st.column_config.NumberColumn(format="%.0f"),
+                "Std dev / day": st.column_config.NumberColumn(format="%.0f"),
             },
         )
 

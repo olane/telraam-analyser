@@ -472,23 +472,25 @@ def render_distribution(out_dir: Path, dpi: int):
             ("Days counted", f"{int(overall['days']):,}", None),
             ("Median / day", f"{overall['median']:,.0f}", None),
             ("Mean / day", f"{overall['mean']:,.0f}", None),
+            ("Std dev / day", f"{overall['std']:,.0f}", None),
         ],
     )
 
     ax_table = fig.add_subplot(gs[1, :])
     ax_table.axis("off")
     titled(ax_table, "Daily summary by day type")
-    rows = [["Day type", "Days", "Median / day", "Mean / day"]]
+    rows = [["Day type", "Days", "Median / day", "Mean / day", "Std dev / day"]]
     for _, r in summary.iterrows():
         rows.append([
             r[DAY_TYPE_COL],
             int(r["days"]),
             f"{r['median']:,.0f}",
             f"{r['mean']:,.0f}",
+            f"{r['std']:,.0f}",
         ])
     styled_table(
         ax_table, rows, [0.0, 0.05, 1.0, 0.75],
-        [0.25, 0.2, 0.25, 0.25],
+        [0.2, 0.16, 0.2, 0.2, 0.2],
     )
 
     ax = fig.add_subplot(gs[2])
